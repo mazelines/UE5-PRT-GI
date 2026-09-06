@@ -1,0 +1,288 @@
+#include "/Engine/Public/Platform.ush"
+#include "/Engine/Private/DeferredShadingCommon.ush"
+
+Texture2D<float4> NormalTexture;
+Texture2D<float4> BaseColorTexture;
+Texture2D<float4> MetallicTexture;
+Texture2D<float> DepthTexture;
+StructuredBuffer<float4> ProbeCoefficients;
+StructuredBuffer<float4> ProbeVolumes;
+StructuredBuffer<float4> ProbeVisibilityPlanes;
+StructuredBuffer<float4> ProbeVisibilityVolumes;
+uint ProbeVisibilityEnabled;
+RWTexture2D<float4> SceneColorOutput;
+
+SamplerState PointClampSampler;
+uint VolumeCount;
+int2 ViewRectMin;
+int2 ViewSize;
+float IndirectIntensity;
+uint ShouldUsePreExposure;
+uint OverwriteSceneColor;
+uint HasTransport;
+
+void EvaluateSH3(float3 D, out float Basis[9])
+{
+    D = normalize(D);
+    Basis[0] = 0.2820947918;
+    Basis[1] = 0.4886025119 * D.y;
+    Basis[2] = 0.4886025119 * D.z;
+    Basis[3] = 0.4886025119 * D.x;
+    Basis[4] = 1.0925484306 * D.x * D.y;
+    Basis[5] = 1.0925484306 * D.y * D.z;
+    Basis[6] = 0.3153915653 * (3.0 * D.z * D.z - 1.0);
+    Basis[7] = 1.0925484306 * D.x * D.z;
+    Basis[8] = 0.5462742153 * (D.x * D.x - D.y * D.y);
+}
+
+int ProbeIndex(int3 Coordinate, int3 GridCounts)
+{
+    return Coordinate.x + GridCounts.x * (Coordinate.y + GridCounts.y * Coordinate.z);
+}
+
+float3 LoadCoefficient(int3 Coordinate, int CoefficientIndex, int3 GridCounts, int Offset)
+{
+    return ProbeCoefficients[Offset + ProbeIndex(Coordinate, GridCounts) * 9 + CoefficientIndex].rgb;
+}
+
+float3 TrilinearCoefficient(float3 GridPosition, int CoefficientIndex, int3 GridCounts, int Offset)
+{
+    int3 P0 = clamp(int3(floor(GridPosition)), int3(0, 0, 0), GridCounts - 1);
+    int3 P1 = min(P0 + 1, GridCounts - 1);
+    float3 T = saturate(GridPosition - float3(P0));
+
+    float3 C00 = lerp(LoadCoefficient(int3(P0.x, P0.y, P0.z), CoefficientIndex, GridCounts, Offset),
+                      LoadCoefficient(int3(P1.x, P0.y, P0.z), CoefficientIndex, GridCounts, Offset), T.x);
+    float3 C10 = lerp(LoadCoefficient(int3(P0.x, P1.y, P0.z), CoefficientIndex, GridCounts, Offset),
+                      LoadCoefficient(int3(P1.x, P1.y, P0.z), CoefficientIndex, GridCounts, Offset), T.x);
+    float3 C01 = lerp(LoadCoefficient(int3(P0.x, P0.y, P1.z), CoefficientIndex, GridCounts, Offset),
+                      LoadCoefficient(int3(P1.x, P0.y, P1.z), CoefficientIndex, GridCounts, Offset), T.x);
+    float3 C11 = lerp(LoadCoefficient(int3(P0.x, P1.y, P1.z), CoefficientIndex, GridCounts, Offset),
+                      LoadCoefficient(int3(P1.x, P1.y, P1.z), CoefficientIndex, GridCounts, Offset), T.x);
+    return lerp(lerp(C00, C10, T.y), lerp(C01, C11, T.y), T.z);
+}
+
+bool ContainsReceiver(uint Volume, float3 Position)
+{
+    return all(Position >= ProbeVolumes[Volume * 5 + 3].xyz)
+        && all(Position <= ProbeVolumes[Volume * 5 + 4].xyz);
+}
+
+void CubicProbeAxis(float Position, int Count, out int4 Indices, out float4 Weights)
+{
+    int Cell = int(floor(Position));
+    float T = Position - Cell;
+    float T2 = T * T;
+    float T3 = T2 * T;
+    // Nonnegative cubic B-spline reconstruction: C2 across cell boundaries,
+    // without the negative lobes/overshoot of interpolating cubic kernels.
+    Weights = float4((1.0 - T) * (1.0 - T) * (1.0 - T),
+        3.0 * T3 - 6.0 * T2 + 4.0,
+        -3.0 * T3 + 3.0 * T2 + 3.0 * T + 1.0, T3) / 6.0;
+    Indices = clamp(Cell + int4(-1, 0, 1, 2), 0, Count - 1);
+    // Combine clamped boundary taps so walls do not repeatedly load one probe.
+    [unroll] for (int I = 3; I > 0; --I)
+    {
+        if (Indices[I] == Indices[I - 1])
+        {
+            Weights[I - 1] += Weights[I];
+            Weights[I] = 0.0;
+        }
+    }
+}
+
+void VisibilityCubeUV(float3 D, out int Face, out float2 UV)
+{
+    float3 A=abs(D); float U,V;
+    if(A.x>=A.y && A.x>=A.z)
+    { Face=D.x>=0?0:1; U=(D.x>=0?-D.z:D.z)/A.x; V=D.y/A.x; }
+    else if(A.y>=A.z)
+    { Face=D.y>=0?2:3; U=D.x/A.y; V=(D.y>=0?-D.z:D.z)/A.y; }
+    else
+    { Face=D.z>=0?4:5; U=(D.z>=0?D.x:-D.x)/A.z; V=D.y/A.z; }
+    UV=float2(U+1,1-V)*.5;
+}
+
+float3 VisibilityCubeDirection(int Face,float2 UV)
+{
+    float U=UV.x*2-1,V=1-UV.y*2;
+    if(Face==0)return float3(1,V,-U);
+    if(Face==1)return float3(-1,V,U);
+    if(Face==2)return float3(U,1,-V);
+    if(Face==3)return float3(U,-1,V);
+    if(Face==4)return float3(U,V,1);
+    return float3(-U,V,-1);
+}
+
+float ProbeVisibility(uint Volume,int ProbeIndexInVolume,float3 ProbeToSurface)
+{
+    int R=int(ProbeVisibilityVolumes[Volume].y);
+    if(ProbeVisibilityEnabled==0 || R==0 || dot(ProbeToSurface,ProbeToSurface)<1.e-8)return 1;
+    int Face;float2 UV;VisibilityCubeUV(ProbeToSurface,Face,UV);
+    float2 Pixel=UV*R-.5,T=frac(Pixel);int2 Base=int2(floor(Pixel));
+    int Offset=int(ProbeVisibilityVolumes[Volume].x)+ProbeIndexInVolume*6*R*R;
+    float Visibility=0;
+    [unroll]for(int I=0;I<4;++I)
+    {
+        int2 Tap=int2(I&1,I>>1),XY=Base+Tap;int F=Face;
+        if(any(XY<0)||any(XY>=R))
+        {
+            float2 Remapped;VisibilityCubeUV(VisibilityCubeDirection(Face,(float2(XY)+.5)/R),F,Remapped);
+            XY=clamp(int2(Remapped*R),0,R-1);
+        }
+        float4 Plane=ProbeVisibilityPlanes[Offset+(F*R+XY.y)*R+XY.x];
+        // Compare against the first-hit plane, not bilinearly blended depths:
+        // blending depths creates fictitious blockers/holes at silhouette edges.
+        // On-surface receivers remain visible; 1cm bias covers capture reconstruction error.
+        float Behind=Plane.w-dot(Plane.xyz,ProbeToSurface);
+        float Visible=1-smoothstep(1.0,2.0,Behind);
+        float2 W=lerp(1-T,T,float2(Tap));
+        Visibility+=W.x*W.y*Visible;
+    }
+    return Visibility;
+}
+
+float3 SampleVolume(uint Volume, float3 Position, float3 SurfaceNormal, float Basis[9])
+{
+    const int V = Volume * 5;
+    const int Offset = int(ProbeVolumes[V].w);
+    const int3 Counts = int3(ProbeVolumes[V + 2].xyz);
+    const float3 GridPosition = saturate((Position - ProbeVolumes[V].xyz) * ProbeVolumes[V + 1].xyz) * (Counts - 1);
+    float3 Irradiance = 0.0;
+    if (ProbeVolumes[V + 1].w > 0.5)
+    {
+        // Preserve the existing global interpolation exactly for coarse-only A/B.
+        [unroll] for (int C = 0; C < 9; ++C)
+            Irradiance += TrilinearCoefficient(GridPosition, C, Counts, Offset) * Basis[C];
+    }
+    else
+    {
+        int4 X, Y, Z;
+        float4 WX, WY, WZ;
+        CubicProbeAxis(GridPosition.x, Counts.x, X, WX);
+        CubicProbeAxis(GridPosition.y, Counts.y, Y, WY);
+        CubicProbeAxis(GridPosition.z, Counts.z, Z, WZ);
+        const float3 CellSize = rcp((Counts - 1) * ProbeVolumes[V + 1].xyz);
+        float WeightSum = 0.0;
+        [loop] for (int Corner = 0; Corner < 64; ++Corner)
+        {
+            int3 Tap = int3(Corner & 3, (Corner >> 2) & 3, (Corner >> 4) & 3);
+            float Weight = WX[Tap.x] * WY[Tap.y] * WZ[Tap.z];
+            if (Weight <= 0.0) continue;
+            int3 Coordinate = int3(X[Tap.x], Y[Tap.y], Z[Tap.z]);
+            int Probe = Offset + ProbeIndex(Coordinate, Counts) * 9;
+            if (ProbeCoefficients[Probe].w < 0.0) continue;
+            // Reject probes behind the receiving surface. Do not add angular
+            // weighting here: near-wall probes at grazing angles otherwise
+            // create periodic dark patches on broad flat receivers.
+            // Curved-surface gate transitions are a known remaining limitation.
+            float3 ProbePosition = ProbeVolumes[V].xyz + float3(Coordinate) * CellSize;
+            if (dot(ProbePosition - Position, SurfaceNormal) <= 0.0) continue;
+            Weight*=ProbeVisibility(Volume,ProbeIndex(Coordinate,Counts),Position-ProbePosition);
+            if(Weight<=0.0)continue;
+            [unroll] for (int C = 0; C < 9; ++C)
+                Irradiance += Weight * ProbeCoefficients[Probe + C].rgb * Basis[C];
+            WeightSum += Weight;
+        }
+        // Do not fill a fully invalid cell with light from across a solid wall.
+        Irradiance = WeightSum > 1.e-6 ? Irradiance / WeightSum : 0.0;
+    }
+    return max(Irradiance, 0.0);
+}
+
+#define NUM_THREADS 8
+
+[numthreads(NUM_THREADS, NUM_THREADS, 1)]
+void MainCS(uint3 DispatchThreadId : SV_DispatchThreadID)
+{
+    if (any(DispatchThreadId.xy >= uint2(ViewSize)))
+    {
+        return;
+    }
+
+    const int2 PixelIndex = ViewRectMin + int2(DispatchThreadId.xy);
+    if (OverwriteSceneColor != 0)
+    {
+        SceneColorOutput[PixelIndex] = float4(0.0, 0.0, 0.0, 1.0);
+    }
+    if (HasTransport == 0)
+    {
+        return;
+    }
+    const float2 BufferUV = (float2(PixelIndex) + 0.5) * View.BufferSizeAndInvSize.zw;
+    const float DeviceZ = DepthTexture.SampleLevel(PointClampSampler, BufferUV, 0).r;
+    if (DeviceZ <= 0.0)
+    {
+        return;
+    }
+
+    const float2 ViewUV = (float2(DispatchThreadId.xy) + 0.5) / float2(ViewSize);
+    const float2 ScreenPosition = ViewUV * float2(2.0, -2.0) + float2(-1.0, 1.0);
+    const float SceneDepth = ConvertFromDeviceZ(DeviceZ);
+    const float3 TranslatedWorldPosition =
+        mul(float4(GetScreenPositionForProjectionType(ScreenPosition, SceneDepth), SceneDepth, 1.0),
+            View.ScreenToTranslatedWorld).xyz;
+
+    if (VolumeCount == 0) return;
+
+    const float3 WorldNormal = normalize(DecodeNormal(NormalTexture.SampleLevel(PointClampSampler, BufferUV, 0).xyz));
+    const float3 BaseColor = DecodeBaseColor(BaseColorTexture.SampleLevel(PointClampSampler, BufferUV, 0).rgb);
+    const float4 PackedMaterial = MetallicTexture.SampleLevel(PointClampSampler, BufferUV, 0);
+    if (DecodeShadingModelId(PackedMaterial.a) == SHADINGMODELID_UNLIT)
+    {
+        return;
+    }
+    const float Metallic = saturate(PackedMaterial.r);
+    const float3 DiffuseAlbedo = BaseColor * (1.0 - Metallic);
+
+    float Basis[9];
+    EvaluateSH3(WorldNormal, Basis);
+    uint Selected = 0xffffffff;
+    int BestPriority = -2147483647;
+    float BestCellVolume = 3.4e38;
+    for (uint Volume = 0; Volume < VolumeCount; ++Volume)
+    {
+        if (!ContainsReceiver(Volume, TranslatedWorldPosition)) continue;
+        float3 CellSize = rcp(ProbeVolumes[Volume * 5 + 1].xyz) / (ProbeVolumes[Volume * 5 + 2].xyz - 1.0);
+        float CellVolume = CellSize.x * CellSize.y * CellSize.z;
+        int Priority = int(ProbeVolumes[Volume * 5 + 2].w);
+        if (Priority > BestPriority || (Priority == BestPriority && CellVolume < BestCellVolume))
+        { Selected = Volume; BestCellVolume = CellVolume; BestPriority = Priority; }
+    }
+    if (Selected == 0xffffffff) return;
+    float3 Irradiance = SampleVolume(Selected, TranslatedWorldPosition, WorldNormal, Basis);
+    if (VolumeCount > 0)
+    {
+        float BlendDistance = ProbeVolumes[Selected * 5 + 3].w;
+        int Face = int(ProbeVolumes[Selected * 5 + 4].w);
+        if (BlendDistance > 0.0 && Face > 0)
+        {
+            int Axis = (Face - 1) / 2;
+            float Distance = (Face & 1) != 0
+                ? TranslatedWorldPosition[Axis] - ProbeVolumes[Selected * 5 + 3][Axis]
+                : ProbeVolumes[Selected * 5 + 4][Axis] - TranslatedWorldPosition[Axis];
+            float Weight = saturate(Distance / BlendDistance);
+            if (Weight < 1.0)
+            {
+                uint Fallback = 0xffffffff;
+                int FallbackPriority = -2147483647;
+                float FallbackCell = 3.4e38;
+                for (uint Volume = 0; Volume < VolumeCount; ++Volume)
+                {
+                    if (Volume == Selected || !ContainsReceiver(Volume, TranslatedWorldPosition)) continue;
+                    int Priority = int(ProbeVolumes[Volume * 5 + 2].w);
+                    float3 Cell = rcp(ProbeVolumes[Volume * 5 + 1].xyz) / (ProbeVolumes[Volume * 5 + 2].xyz - 1.0);
+                    float CellVolume = Cell.x * Cell.y * Cell.z;
+                    if (Priority > FallbackPriority || (Priority == FallbackPriority && CellVolume < FallbackCell))
+                    { Fallback = Volume; FallbackPriority = Priority; FallbackCell = CellVolume; }
+                }
+                float3 Lower = Fallback == 0xffffffff ? 0.0 : SampleVolume(Fallback, TranslatedWorldPosition, WorldNormal, Basis);
+                Irradiance = lerp(Lower, Irradiance, Weight);
+            }
+        }
+    }
+
+    const float PreExposure = ShouldUsePreExposure != 0 ? View.PreExposure : 1.0;
+    const float3 IndirectRadiance = Irradiance * DiffuseAlbedo * (1.0 / PI) * IndirectIntensity * PreExposure;
+    SceneColorOutput[PixelIndex] += float4(max(IndirectRadiance, 0.0), 0.0);
+}

@@ -1,0 +1,24 @@
+{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "0.1.0",
+  "FriendlyName": "UE5-PRT-GI",
+  "Description": "Precomputed Radiance Transfer (PRT) Global Illumination (GI) plugin for Unreal Engine 5 (UE5): probe volumes, GPU DirectionalLight relighting, 1-4 indirect bounces, and a Cornell Box showcase for Lumen comparison.",
+  "Category": "Rendering",
+  "CreatedBy": "ClassicSponzaUnreal",
+  "CanContainContent": true,
+  "IsBetaVersion": true,
+  "Installed": false,
+  "Modules": [
+    {
+      "Name": "PRTGI",
+      "Type": "Runtime",
+      "LoadingPhase": "PostConfigInit"
+    },
+    {
+      "Name": "PRTGIEditor",
+      "Type": "Editor",
+      "LoadingPhase": "Default"
+    }
+  ]
+}

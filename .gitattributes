@@ -1,0 +1,14 @@
+# Normalize text independently of the host project's attributes.
+* text=auto eol=lf
+*.ps1 text eol=crlf
+
+# Small Unreal assets and documentation images stay in ordinary Git.
+*.uasset binary -filter
+*.umap binary -filter
+*.png binary -filter
+*.jpg binary -filter
+
+# Large precomputation data is included through Git LFS, not ignored.
+*.prtgi filter=lfs diff=lfs merge=lfs -text
+*.surfels filter=lfs diff=lfs merge=lfs -text
+*.multi filter=lfs diff=lfs merge=lfs -text

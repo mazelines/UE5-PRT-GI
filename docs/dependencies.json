@@ -1,0 +1,1032 @@
+{
+  "passed": true,
+  "empty_host_content": true,
+  "physical_plugin_copy": true,
+  "sequential_volume_validation": true,
+  "module_sha256": {
+    "UnrealEditor-PRTGI.dll": "3235013c0acdd00249d2097d71abfa79e18189001ba6d5c068d2831f2104581f",
+    "UnrealEditor-PRTGIEditor.dll": "ef1a3306ee98ac9f854fb1bd272a3a8f1c375b54e200daa43558599e44637ab6"
+  },
+  "all_plugin_assets_loaded": true,
+  "cache_files_unchanged": true,
+  "no_game_asset_dependencies": true,
+  "no_legacy_cache_fallback": true,
+  "volumes": [
+    {
+      "label": "PRT_ClassicBox",
+      "status": "Ready: GPU 4 indirect bounces",
+      "bounces": 4,
+      "valid": 475,
+      "active": true,
+      "cache": "Content/Precomputed/Volumes/_PRTGI_Maps_PRTGI_Showcase/A91F677D4BB920C3D18FBCB8BDD7603D.prtgi.surfels",
+      "has_cache_pair": true,
+      "probe_sphere_instances": 512,
+      "capture_resolution": 16,
+      "build_warnings": ""
+    },
+    {
+      "label": "PRT_ColorBox",
+      "status": "Ready: GPU 4 indirect bounces",
+      "bounces": 4,
+      "valid": 1060,
+      "active": true,
+      "cache": "Content/Precomputed/Volumes/_PRTGI_Maps_PRTGI_Showcase/BA47FD6B404B8D4245D9B1B8D1A10406.prtgi.surfels",
+      "has_cache_pair": true,
+      "probe_sphere_instances": 1152,
+      "capture_resolution": 16,
+      "build_warnings": ""
+    },
+    {
+      "label": "PRT_Global",
+      "status": "Ready: GPU 4 indirect bounces",
+      "bounces": 4,
+      "valid": 703,
+      "active": true,
+      "cache": "Content/Precomputed/Volumes/_PRTGI_Maps_PRTGI_Showcase/F8F315724AC8A1C64315C19508677403.prtgi.surfels",
+      "has_cache_pair": true,
+      "probe_sphere_instances": 715,
+      "capture_resolution": 16,
+      "build_warnings": ""
+    },
+    {
+      "label": "PRT_InvertedBox",
+      "status": "Ready: GPU 4 indirect bounces",
+      "bounces": 4,
+      "valid": 1068,
+      "active": true,
+      "cache": "Content/Precomputed/Volumes/_PRTGI_Maps_PRTGI_Showcase/F889260B43904DBA5B4587B3C19D4B68.prtgi.surfels",
+      "has_cache_pair": true,
+      "probe_sphere_instances": 1152,
+      "capture_resolution": 16,
+      "build_warnings": ""
+    },
+    {
+      "label": "PRT_MetallicBox",
+      "status": "Ready: GPU 4 indirect bounces [capture warning]",
+      "bounces": 4,
+      "valid": 2135,
+      "active": true,
+      "cache": "Content/Precomputed/Volumes/_PRTGI_Maps_PRTGI_Showcase/550B18EE4E3A06E6BB7335ACE71E3CA5.prtgi.surfels",
+      "has_cache_pair": true,
+      "probe_sphere_instances": 2240,
+      "capture_resolution": 16,
+      "build_warnings": "\u5df2\u6392\u9664 77/2212 \u4e2a\u53d7\u68c0 Probe\uff08\u51e0\u4f55\u5f02\u5e38\u6216\u7a7a\u91c7\u96c6\uff09\uff1b\u5176\u6570\u636e\u4e0d\u53c2\u4e0e\u4f20\u8f93\u548c\u63d2\u503c"
+    },
+    {
+      "label": "PRT_ShinyBox",
+      "status": "Ready: GPU 4 indirect bounces [capture warning]",
+      "bounces": 4,
+      "valid": 857,
+      "active": true,
+      "cache": "Content/Precomputed/Volumes/_PRTGI_Maps_PRTGI_Showcase/8F9EA5FF44BAAA1052B20880F2A0E82A.prtgi.surfels",
+      "has_cache_pair": true,
+      "probe_sphere_instances": 918,
+      "capture_resolution": 16,
+      "build_warnings": "\u5df2\u6392\u9664 21/878 \u4e2a\u53d7\u68c0 Probe\uff08\u51e0\u4f55\u5f02\u5e38\u6216\u7a7a\u91c7\u96c6\uff09\uff1b\u5176\u6570\u636e\u4e0d\u53c2\u4e0e\u4f20\u8f93\u548c\u63d2\u503c"
+    }
+  ],
+  "cache_sha256": {
+    "Content/Precomputed/Volumes/_PRTGI_Maps_PRTGI_Showcase/550B18EE4E3A06E6BB7335ACE71E3CA5.prtgi.surfels": "2655599dfe0f5083680ffdf66898043e3f2bb9b887554ceef1353c3e7317aebd",
+    "Content/Precomputed/Volumes/_PRTGI_Maps_PRTGI_Showcase/550B18EE4E3A06E6BB7335ACE71E3CA5.prtgi.surfels.multi": "2c7818a360be4db5abdaa5ac017dfd8b5f2e7c8d819199fccb0f4afa1cccc131",
+    "Content/Precomputed/Volumes/_PRTGI_Maps_PRTGI_Showcase/8F9EA5FF44BAAA1052B20880F2A0E82A.prtgi.surfels": "71473f5267f9a4f7acab34d6574a8b1bc4b11de69c0b195a95305dbdf09d8d6d",
+    "Content/Precomputed/Volumes/_PRTGI_Maps_PRTGI_Showcase/8F9EA5FF44BAAA1052B20880F2A0E82A.prtgi.surfels.multi": "253d38c269618ad4aaa7f0381692e141c4066d4cd2573961785e74244e915701",
+    "Content/Precomputed/Volumes/_PRTGI_Maps_PRTGI_Showcase/A91F677D4BB920C3D18FBCB8BDD7603D.prtgi.surfels": "2f7a09465190b139bb0be2d2bdaf7b03f9d1c19749d117f5e728c9ef6baaa04f",
+    "Content/Precomputed/Volumes/_PRTGI_Maps_PRTGI_Showcase/A91F677D4BB920C3D18FBCB8BDD7603D.prtgi.surfels.multi": "7c40f6511b3338c9e4c174bd3f1d5843856e5d68863dff3a389c5ad98fab7645",
+    "Content/Precomputed/Volumes/_PRTGI_Maps_PRTGI_Showcase/BA47FD6B404B8D4245D9B1B8D1A10406.prtgi.surfels": "054bb57215b25f5a7e08ce2ed25be1ec569a5551409158016815890d4860ed88",
+    "Content/Precomputed/Volumes/_PRTGI_Maps_PRTGI_Showcase/BA47FD6B404B8D4245D9B1B8D1A10406.prtgi.surfels.multi": "1a3c9721e05d7c444dfc04e688d5e13eef75b9943db5876762054c944b0b41f7",
+    "Content/Precomputed/Volumes/_PRTGI_Maps_PRTGI_Showcase/F889260B43904DBA5B4587B3C19D4B68.prtgi.surfels": "e765c0a7c455afba63ff44b8e289b063ab20d4c5619439420be23e201ab5ea26",
+    "Content/Precomputed/Volumes/_PRTGI_Maps_PRTGI_Showcase/F889260B43904DBA5B4587B3C19D4B68.prtgi.surfels.multi": "6647713f3d38a671ac8c0bdadcf53dc48b413db518648b6f3398456894b767aa",
+    "Content/Precomputed/Volumes/_PRTGI_Maps_PRTGI_Showcase/F8F315724AC8A1C64315C19508677403.prtgi.surfels": "96821085eff770dda9b33a034d7c30a99c323703c2c12fcaa74f9179ba490a80",
+    "Content/Precomputed/Volumes/_PRTGI_Maps_PRTGI_Showcase/F8F315724AC8A1C64315C19508677403.prtgi.surfels.multi": "61318a6e31f5f1f0ee354d6ee8437eedeb19c1f7c40a63a7d78c7a24d2364be4"
+  },
+  "packages": [
+    "/PRTGI/Maps/PRTGI_Showcase",
+    "/PRTGI/Materials/M_PRTDiffuseCapture",
+    "/PRTGI/Materials/M_PRTProbeSH",
+    "/PRTGI/Showcase/Materials/MI_Blue",
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Back_Wall_0",
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Back_Wall_1",
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Back_Wall_2",
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Back_Wall_3",
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Back_Wall_4",
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Back_Wall_5",
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Bottom_Wall_0",
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Bottom_Wall_1",
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Bottom_Wall_2",
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Bottom_Wall_3",
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Bottom_Wall_4",
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Bottom_Wall_5",
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Left_Wall_0",
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Left_Wall_1",
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Left_Wall_2",
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Left_Wall_3",
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Left_Wall_4",
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Left_Wall_5",
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Right_Wall_0",
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Right_Wall_1",
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Right_Wall_2",
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Right_Wall_3",
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Right_Wall_4",
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Right_Wall_5",
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Top_Wall_0",
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Top_Wall_1",
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Top_Wall_2",
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Top_Wall_3",
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Top_Wall_4",
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Top_Wall_5",
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Back_Wall_0",
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Back_Wall_1",
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Back_Wall_2",
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Back_Wall_3",
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Back_Wall_4",
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Back_Wall_5",
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Bottom_Wall_0",
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Bottom_Wall_1",
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Bottom_Wall_2",
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Bottom_Wall_3",
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Bottom_Wall_4",
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Bottom_Wall_5",
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Left_Wall_0",
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Left_Wall_1",
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Left_Wall_2",
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Left_Wall_3",
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Left_Wall_4",
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Left_Wall_5",
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Right_Wall_0",
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Right_Wall_1",
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Right_Wall_2",
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Right_Wall_3",
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Right_Wall_4",
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Right_Wall_5",
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Top_Wall_0",
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Top_Wall_1",
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Top_Wall_2",
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Top_Wall_3",
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Top_Wall_4",
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Top_Wall_5",
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Back_Wall_0",
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Back_Wall_1",
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Back_Wall_2",
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Back_Wall_3",
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Back_Wall_4",
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Back_Wall_5",
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Bottom_Wall_0",
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Bottom_Wall_1",
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Bottom_Wall_2",
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Bottom_Wall_3",
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Bottom_Wall_4",
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Bottom_Wall_5",
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Left_Wall_0",
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Left_Wall_1",
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Left_Wall_2",
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Left_Wall_3",
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Left_Wall_4",
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Left_Wall_5",
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Right_Wall_0",
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Right_Wall_1",
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Right_Wall_2",
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Right_Wall_3",
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Right_Wall_4",
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Right_Wall_5",
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Top_Wall_0",
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Top_Wall_1",
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Top_Wall_2",
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Top_Wall_3",
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Top_Wall_4",
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Top_Wall_5",
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Back_Wall_0",
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Back_Wall_1",
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Back_Wall_2",
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Back_Wall_3",
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Back_Wall_4",
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Back_Wall_5",
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Bottom_Wall_0",
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Bottom_Wall_1",
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Bottom_Wall_2",
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Bottom_Wall_3",
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Bottom_Wall_4",
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Bottom_Wall_5",
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Front_Wall_0",
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Front_Wall_1",
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Front_Wall_2",
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Front_Wall_3",
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Front_Wall_4",
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Front_Wall_5",
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Left_Wall_0",
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Left_Wall_1",
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Left_Wall_2",
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Left_Wall_3",
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Left_Wall_4",
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Left_Wall_5",
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Right_Wall_0",
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Right_Wall_1",
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Right_Wall_2",
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Right_Wall_3",
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Right_Wall_4",
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Right_Wall_5",
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Back_Wall_0",
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Back_Wall_1",
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Back_Wall_2",
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Back_Wall_3",
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Back_Wall_4",
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Back_Wall_5",
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Bottom_Wall_0",
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Bottom_Wall_1",
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Bottom_Wall_2",
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Bottom_Wall_3",
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Bottom_Wall_4",
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Bottom_Wall_5",
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Left_Wall_0",
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Left_Wall_1",
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Left_Wall_2",
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Left_Wall_3",
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Left_Wall_4",
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Left_Wall_5",
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Right_Wall_0",
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Right_Wall_1",
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Right_Wall_2",
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Right_Wall_3",
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Right_Wall_4",
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Right_Wall_5",
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Top_Wall_0",
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Top_Wall_1",
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Top_Wall_2",
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Top_Wall_3",
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Top_Wall_4",
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Top_Wall_5",
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Back_Wall_0",
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Back_Wall_1",
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Back_Wall_2",
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Back_Wall_3",
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Back_Wall_4",
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Back_Wall_5",
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Bottom_Wall_0",
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Bottom_Wall_1",
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Bottom_Wall_2",
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Bottom_Wall_3",
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Bottom_Wall_4",
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Bottom_Wall_5",
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Left_Wall_0",
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Left_Wall_1",
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Left_Wall_2",
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Left_Wall_3",
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Left_Wall_4",
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Left_Wall_5",
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Right_Wall_0",
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Right_Wall_1",
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Right_Wall_2",
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Right_Wall_3",
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Right_Wall_4",
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Right_Wall_5",
+    "/PRTGI/Showcase/Materials/MI_White",
+    "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall",
+    "/PRTGI/Showcase/Meshes/SM_CornellBox_Wall",
+    "/PRTGI/Showcase/Meshes/SM_Cube",
+    "/PRTGI/Showcase/Meshes/SM_Sphere"
+  ],
+  "runtime_assets": [
+    "/PRTGI/Materials/M_PRTProbeSH",
+    "/PRTGI/Materials/M_PRTDiffuseCapture",
+    "/Engine/BasicShapes/Sphere"
+  ],
+  "external_engine_dependencies": [
+    "/Engine/BasicShapes/Sphere",
+    "/Engine/EditorResources/LightIcons/S_LightError",
+    "/Engine/EngineMaterials/WorldGridMaterial",
+    "/Engine/EngineResources/WhiteSquareTexture",
+    "/Script/NavigationSystem",
+    "/Script/PRTGI"
+  ],
+  "references": {
+    "/PRTGI/Materials/M_PRTDiffuseCapture": [],
+    "/PRTGI/Materials/M_PRTProbeSH": [
+      "/Engine/EngineResources/WhiteSquareTexture"
+    ],
+    "/PRTGI/Showcase/Meshes/SM_Sphere": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall",
+      "/Script/NavigationSystem"
+    ],
+    "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall": [],
+    "/PRTGI/Showcase/Meshes/SM_Cube": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall",
+      "/Script/NavigationSystem"
+    ],
+    "/PRTGI/Showcase/Meshes/SM_CornellBox_Wall": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall",
+      "/Script/NavigationSystem"
+    ],
+    "/PRTGI/Showcase/Materials/MI_White": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Right_Wall_5": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Right_Wall_4": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Right_Wall_3": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Right_Wall_2": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Right_Wall_1": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Right_Wall_0": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Left_Wall_5": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Left_Wall_4": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Left_Wall_3": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Left_Wall_2": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Left_Wall_1": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Left_Wall_0": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Bottom_Wall_5": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Bottom_Wall_4": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Bottom_Wall_3": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Bottom_Wall_2": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Bottom_Wall_1": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Bottom_Wall_0": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Back_Wall_5": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Back_Wall_4": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Back_Wall_3": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Back_Wall_2": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Back_Wall_1": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Back_Wall_0": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Top_Wall_5": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Top_Wall_4": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Top_Wall_3": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Top_Wall_2": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Top_Wall_1": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Top_Wall_0": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Right_Wall_5": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Right_Wall_4": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Right_Wall_3": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Right_Wall_2": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Right_Wall_1": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Right_Wall_0": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Left_Wall_5": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Left_Wall_4": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Left_Wall_3": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Left_Wall_2": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Left_Wall_1": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Left_Wall_0": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Bottom_Wall_5": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Bottom_Wall_4": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Bottom_Wall_3": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Bottom_Wall_2": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Bottom_Wall_1": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Bottom_Wall_0": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Back_Wall_5": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Back_Wall_4": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Back_Wall_3": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Back_Wall_2": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Back_Wall_1": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Back_Wall_0": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Right_Wall_5": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Right_Wall_4": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Right_Wall_3": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Right_Wall_2": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Right_Wall_1": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Right_Wall_0": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Left_Wall_5": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Left_Wall_4": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Left_Wall_3": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Left_Wall_2": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Left_Wall_1": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Left_Wall_0": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Front_Wall_5": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Front_Wall_4": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Front_Wall_3": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Front_Wall_2": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Front_Wall_1": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Front_Wall_0": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Bottom_Wall_5": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Bottom_Wall_4": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Bottom_Wall_3": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Bottom_Wall_2": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Bottom_Wall_1": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Bottom_Wall_0": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Back_Wall_5": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Back_Wall_4": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Back_Wall_3": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Back_Wall_2": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Back_Wall_1": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Back_Wall_0": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Top_Wall_5": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Top_Wall_4": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Top_Wall_3": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Top_Wall_2": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Top_Wall_1": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Top_Wall_0": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Right_Wall_5": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Right_Wall_4": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Right_Wall_3": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Right_Wall_2": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Right_Wall_1": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Right_Wall_0": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Left_Wall_5": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Left_Wall_4": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Left_Wall_3": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Left_Wall_2": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Left_Wall_1": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Left_Wall_0": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Bottom_Wall_5": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Bottom_Wall_4": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Bottom_Wall_3": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Bottom_Wall_2": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Bottom_Wall_1": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Bottom_Wall_0": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Back_Wall_5": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Back_Wall_4": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Back_Wall_3": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Back_Wall_2": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Back_Wall_1": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Back_Wall_0": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Top_Wall_5": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Top_Wall_4": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Top_Wall_3": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Top_Wall_2": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Top_Wall_1": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Top_Wall_0": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Right_Wall_5": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Right_Wall_4": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Right_Wall_3": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Right_Wall_2": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Right_Wall_1": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Right_Wall_0": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Left_Wall_5": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Left_Wall_4": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Left_Wall_3": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Left_Wall_2": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Left_Wall_1": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Left_Wall_0": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Bottom_Wall_5": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Bottom_Wall_4": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Bottom_Wall_3": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Bottom_Wall_2": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Bottom_Wall_1": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Bottom_Wall_0": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Back_Wall_5": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Back_Wall_4": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Back_Wall_3": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Back_Wall_2": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Back_Wall_1": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Back_Wall_0": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Top_Wall_5": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Top_Wall_4": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Top_Wall_3": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Top_Wall_2": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Top_Wall_1": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Top_Wall_0": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Right_Wall_5": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Right_Wall_4": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Right_Wall_3": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Right_Wall_2": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Right_Wall_1": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Right_Wall_0": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Left_Wall_5": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Left_Wall_4": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Left_Wall_3": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Left_Wall_2": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Left_Wall_1": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Left_Wall_0": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Bottom_Wall_5": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Bottom_Wall_4": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Bottom_Wall_3": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Bottom_Wall_2": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Bottom_Wall_1": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Bottom_Wall_0": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Back_Wall_5": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Back_Wall_4": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Back_Wall_3": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Back_Wall_2": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Back_Wall_1": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Back_Wall_0": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Showcase/Materials/MI_Blue": [
+      "/PRTGI/Showcase/Materials/M_CornellBox_WhiteWall"
+    ],
+    "/PRTGI/Maps/PRTGI_Showcase": [
+      "/Engine/EditorResources/LightIcons/S_LightError",
+      "/Engine/EngineMaterials/WorldGridMaterial",
+      "/PRTGI/Showcase/Materials/MI_Blue",
+      "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Back_Wall_0",
+      "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Back_Wall_1",
+      "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Back_Wall_2",
+      "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Back_Wall_3",
+      "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Back_Wall_4",
+      "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Back_Wall_5",
+      "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Bottom_Wall_0",
+      "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Bottom_Wall_1",
+      "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Bottom_Wall_2",
+      "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Bottom_Wall_3",
+      "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Bottom_Wall_4",
+      "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Bottom_Wall_5",
+      "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Left_Wall_0",
+      "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Left_Wall_1",
+      "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Left_Wall_2",
+      "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Left_Wall_3",
+      "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Left_Wall_4",
+      "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Left_Wall_5",
+      "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Right_Wall_0",
+      "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Right_Wall_1",
+      "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Right_Wall_2",
+      "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Right_Wall_3",
+      "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Right_Wall_4",
+      "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Right_Wall_5",
+      "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Top_Wall_0",
+      "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Top_Wall_1",
+      "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Top_Wall_2",
+      "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Top_Wall_3",
+      "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Top_Wall_4",
+      "/PRTGI/Showcase/Materials/MI_Classic_Cornell_Box_Top_Wall_5",
+      "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Back_Wall_0",
+      "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Back_Wall_1",
+      "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Back_Wall_2",
+      "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Back_Wall_3",
+      "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Back_Wall_4",
+      "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Back_Wall_5",
+      "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Bottom_Wall_0",
+      "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Bottom_Wall_1",
+      "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Bottom_Wall_2",
+      "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Bottom_Wall_3",
+      "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Bottom_Wall_4",
+      "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Bottom_Wall_5",
+      "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Left_Wall_0",
+      "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Left_Wall_1",
+      "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Left_Wall_2",
+      "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Left_Wall_3",
+      "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Left_Wall_4",
+      "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Left_Wall_5",
+      "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Right_Wall_0",
+      "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Right_Wall_1",
+      "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Right_Wall_2",
+      "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Right_Wall_3",
+      "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Right_Wall_4",
+      "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Right_Wall_5",
+      "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Top_Wall_0",
+      "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Top_Wall_1",
+      "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Top_Wall_2",
+      "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Top_Wall_3",
+      "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Top_Wall_4",
+      "/PRTGI/Showcase/Materials/MI_Directional_Cornell_Box_Top_Wall_5",
+      "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Back_Wall_0",
+      "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Back_Wall_1",
+      "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Back_Wall_2",
+      "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Back_Wall_3",
+      "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Back_Wall_4",
+      "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Back_Wall_5",
+      "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Bottom_Wall_0",
+      "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Bottom_Wall_1",
+      "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Bottom_Wall_2",
+      "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Bottom_Wall_3",
+      "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Bottom_Wall_4",
+      "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Bottom_Wall_5",
+      "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Left_Wall_0",
+      "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Left_Wall_1",
+      "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Left_Wall_2",
+      "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Left_Wall_3",
+      "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Left_Wall_4",
+      "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Left_Wall_5",
+      "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Right_Wall_0",
+      "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Right_Wall_1",
+      "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Right_Wall_2",
+      "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Right_Wall_3",
+      "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Right_Wall_4",
+      "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Right_Wall_5",
+      "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Top_Wall_0",
+      "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Top_Wall_1",
+      "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Top_Wall_2",
+      "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Top_Wall_3",
+      "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Top_Wall_4",
+      "/PRTGI/Showcase/Materials/MI_Emissive_Cornell_Box_Top_Wall_5",
+      "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Back_Wall_0",
+      "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Back_Wall_1",
+      "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Back_Wall_2",
+      "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Back_Wall_3",
+      "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Back_Wall_4",
+      "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Back_Wall_5",
+      "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Bottom_Wall_0",
+      "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Bottom_Wall_1",
+      "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Bottom_Wall_2",
+      "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Bottom_Wall_3",
+      "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Bottom_Wall_4",
+      "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Bottom_Wall_5",
+      "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Front_Wall_0",
+      "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Front_Wall_1",
+      "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Front_Wall_2",
+      "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Front_Wall_3",
+      "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Front_Wall_4",
+      "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Front_Wall_5",
+      "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Left_Wall_0",
+      "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Left_Wall_1",
+      "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Left_Wall_2",
+      "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Left_Wall_3",
+      "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Left_Wall_4",
+      "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Left_Wall_5",
+      "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Right_Wall_0",
+      "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Right_Wall_1",
+      "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Right_Wall_2",
+      "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Right_Wall_3",
+      "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Right_Wall_4",
+      "/PRTGI/Showcase/Materials/MI_Enclosing_Cornell_Box_Right_Wall_5",
+      "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Back_Wall_0",
+      "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Back_Wall_1",
+      "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Back_Wall_2",
+      "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Back_Wall_3",
+      "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Back_Wall_4",
+      "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Back_Wall_5",
+      "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Bottom_Wall_0",
+      "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Bottom_Wall_1",
+      "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Bottom_Wall_2",
+      "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Bottom_Wall_3",
+      "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Bottom_Wall_4",
+      "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Bottom_Wall_5",
+      "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Left_Wall_0",
+      "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Left_Wall_1",
+      "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Left_Wall_2",
+      "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Left_Wall_3",
+      "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Left_Wall_4",
+      "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Left_Wall_5",
+      "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Right_Wall_0",
+      "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Right_Wall_1",
+      "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Right_Wall_2",
+      "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Right_Wall_3",
+      "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Right_Wall_4",
+      "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Right_Wall_5",
+      "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Top_Wall_0",
+      "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Top_Wall_1",
+      "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Top_Wall_2",
+      "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Top_Wall_3",
+      "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Top_Wall_4",
+      "/PRTGI/Showcase/Materials/MI_Metallic_Cornell_Box_Top_Wall_5",
+      "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Back_Wall_0",
+      "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Back_Wall_1",
+      "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Back_Wall_2",
+      "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Back_Wall_3",
+      "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Back_Wall_4",
+      "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Back_Wall_5",
+      "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Bottom_Wall_0",
+      "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Bottom_Wall_1",
+      "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Bottom_Wall_2",
+      "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Bottom_Wall_3",
+      "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Bottom_Wall_4",
+      "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Bottom_Wall_5",
+      "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Left_Wall_0",
+      "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Left_Wall_1",
+      "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Left_Wall_2",
+      "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Left_Wall_3",
+      "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Left_Wall_4",
+      "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Left_Wall_5",
+      "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Right_Wall_0",
+      "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Right_Wall_1",
+      "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Right_Wall_2",
+      "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Right_Wall_3",
+      "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Right_Wall_4",
+      "/PRTGI/Showcase/Materials/MI_Shiny_Cornell_Box_Right_Wall_5",
+      "/PRTGI/Showcase/Materials/MI_White",
+      "/PRTGI/Showcase/Meshes/SM_CornellBox_Wall",
+      "/PRTGI/Showcase/Meshes/SM_Cube",
+      "/PRTGI/Showcase/Meshes/SM_Sphere",
+      "/Script/NavigationSystem",
+      "/Script/PRTGI"
+    ]
+  }
+}

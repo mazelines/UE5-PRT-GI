@@ -1,0 +1,91 @@
+#include "/Engine/Public/Platform.ush"
+
+StructuredBuffer<float4> Surfaces;
+StructuredBuffer<float4> Triangles;
+StructuredBuffer<float4> Nodes;
+struct FTransportTerm { uint Source; uint Bounce; uint Packed[14]; };
+StructuredBuffer<FTransportTerm> Terms;
+StructuredBuffer<uint2> Ranges;
+StructuredBuffer<float4> SourceRadiance;
+RWStructuredBuffer<float4> OutRadiance;
+RWStructuredBuffer<float4> OutSH;
+uint SourceCount;
+uint NodeCount;
+uint BounceCount;
+uint CastShadows;
+float3 SunDirection;
+float3 SunColor;
+float SunLux;
+float ShadowBias;
+
+bool BoxHit(float3 O,float3 D,float3 Min,float3 Max)
+{
+    float Lo=0,Hi=1.e7;
+    [unroll]for(uint Axis=0;Axis<3;++Axis)
+    {
+        if(abs(D[Axis])<1.e-8){if(O[Axis]<Min[Axis]||O[Axis]>Max[Axis])return false;}
+        else {float A=(Min[Axis]-O[Axis])/D[Axis],B=(Max[Axis]-O[Axis])/D[Axis];Lo=max(Lo,min(A,B));Hi=min(Hi,max(A,B));}
+    }
+    return Hi>=Lo;
+}
+bool Shadowed(float3 O,float3 D)
+{
+    uint Node=0;
+    [loop]while(Node<NodeCount)
+    {
+        float4 Min=Nodes[Node*2],Max=Nodes[Node*2+1];
+        if(!BoxHit(O,D,Min.xyz,Max.xyz)){Node=Min.w<0?(uint)Max.w:Node+1;continue;}
+        if(Min.w<0){++Node;continue;}
+        [loop]for(uint T=(uint)Min.w;T<(uint)(Min.w+Max.w);++T)
+        {
+            float4 Vertex=Triangles[T*3];if(Vertex.w==0)continue;
+            float3 E1=Triangles[T*3+1].xyz,E2=Triangles[T*3+2].xyz,P=cross(D,E2);
+            float Det=dot(E1,P);if(abs(Det)<1.e-8)continue;
+            float Inv=1/Det;float3 Delta=O-Vertex.xyz;
+            float U=dot(Delta,P)*Inv;if(U<0||U>1)continue;
+            float3 Q=cross(Delta,E1);float V=dot(D,Q)*Inv;if(V<0||U+V>1)continue;
+            float Distance=dot(E2,Q)*Inv;if(Distance>=.001 && Distance<1.e7)return true;
+        }
+        ++Node;
+    }
+    return false;
+}
+[numthreads(64,1,1)]
+void ShadeSourcesCS(uint3 DT:SV_DispatchThreadID)
+{
+    uint S=DT.x;if(S>=SourceCount)return;
+    float3 P=Surfaces[S*3].xyz,N=Surfaces[S*3+1].xyz,Rho=Surfaces[S*3+2].xyz;
+    float Cos=max(0,dot(N,SunDirection));
+    bool Blocked=CastShadows!=0 && Cos>0 && SunLux>0 && Shadowed(P+N*ShadowBias,SunDirection);
+    OutRadiance[S]=float4(Blocked?float3(0,0,0):Rho*SunColor*(SunLux*Cos/3.141592653589793),0);
+}
+groupshared float3 Reduction[64*9];
+[numthreads(64,1,1)]
+void ApplyTransportCS(uint3 Group:SV_GroupID,uint Lane:SV_GroupIndex)
+{
+    uint Probe=Group.x;uint2 Range=Ranges[Probe];float3 Sum[9];
+    [unroll]for(uint C=0;C<9;++C)Sum[C]=0;
+    [loop]for(uint T=Range.x+Lane;T<Range.y;T+=64)
+    {
+        if(Terms[T].Bounce>BounceCount)continue;
+        float3 L=SourceRadiance[Terms[T].Source].xyz;
+        [unroll]for(uint C=0;C<9;++C)
+        {
+            float3 W;
+            [unroll]for(uint Channel=0;Channel<3;++Channel)
+            {
+                uint I=C*3+Channel;
+                W[Channel]=f16tof32((Terms[T].Packed[I/2]>>((I%2)*16))&0xffff);
+            }
+            Sum[C]+=W*L;
+        }
+    }
+    [unroll]for(uint C=0;C<9;++C)Reduction[Lane*9+C]=Sum[C];
+    GroupMemoryBarrierWithGroupSync();
+    [unroll]for(uint Step=32;Step>0;Step>>=1)
+    {
+        if(Lane<Step)[unroll]for(uint C=0;C<9;++C)Reduction[Lane*9+C]+=Reduction[(Lane+Step)*9+C];
+        GroupMemoryBarrierWithGroupSync();
+    }
+    if(Lane==0)[unroll]for(uint C=0;C<9;++C)OutSH[Probe*9+C]=float4(Reduction[C],0);
+}
