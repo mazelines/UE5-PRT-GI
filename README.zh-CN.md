@@ -1,16 +1,18 @@
 # UE5-PRT-GI
 
-[English](README.md) | **简体中文**
+[English](README.md) | [한국어](README.ko.md) | **简体中文**
+
+[使用指南 · GitHub Wiki](https://github.com/mazelines/UE5-PRT-GI/wiki)
 
 UE 5.8 的静态场景 Probe GI 插件。包含 Cornell Box 示例、方向光实时重光照、1～4 次间接反弹、独立 Probe Volume 与可视化。
 
-![PRT GI Cornell Box showcase](docs/images/prt-gi-showcase.png)
+![PRT GI Cornell Box showcase](Plugins/PRTGI/docs/images/prt-gi-showcase.png)
 
 ## 安装
 
-通过 Git 获取此插件时需要 **Git LFS**：预计算缓存使用 LFS 保存。克隆后在插件仓库目录运行 `git lfs install --local` 和 `git lfs pull`，确保 `.surfels` / `.multi` 是实际二进制文件，而不是 LFS pointer 文本。仓库根目录就是插件目录，安装时使用下述 `Plugins/PRTGI` 路径。
+通过 Git 获取此插件时需要 **Git LFS**：预计算缓存使用 LFS 保存。克隆后在仓库目录运行 `git lfs install --local` 和 `git lfs pull`，确保 `.surfels` / `.multi` 是实际二进制文件，而不是 LFS pointer 文本。仓库现在包含宿主项目 `UE_PRT_GI.uproject`，插件位于 `Plugins/PRTGI`。`ue6` 分支的项目 Target 使用 `Unreal6_0`；下文的 UE 5.8 验证记录针对原始插件，不代表此宿主项目已通过验证。
 
-1. 将插件放入 `YourProject/Plugins/PRTGI`，确保目录内直接包含 `PRTGI.uplugin`，不要额外嵌套一层仓库目录。
+1. 使用随附宿主项目时，打开 `UE_PRT_GI.uproject`。安装到其他项目时，将本仓库的 `Plugins/PRTGI` 目录复制到 `YourProject/Plugins/PRTGI`，确保目录内直接包含 `PRTGI.uplugin`，不要额外嵌套一层仓库目录。
 2. 使用与宿主项目匹配的 UE 和 C++ 工具链编译 **Editor target**。Blueprint 项目也需要能够编译此 C++ 插件的环境，必要时先添加一个 C++ 类以生成项目 target。
 3. 在 **Edit → Plugins** 搜索 **UE5-PRT-GI** 并启用，按提示重启 Editor。
 
@@ -30,7 +32,7 @@ UE 5.8 的静态场景 Probe GI 插件。包含 Cornell Box 示例、方向光�
 
 随附示例的默认 Map Profile 会临时设置 `r.Lumen.HardwareRayTracing=1`、`r.Lumen.ScreenProbeGather.ScreenTraces=0` 和 `r.EyeAdaptation.CachedLightingPreExposure=8`，离开地图后恢复原值。因此示例的 Lumen 比较关闭了 diffuse screen traces，并非 Lumen 默认配置。这些临时覆盖不能代替项目级硬件光追支持设置。
 
-独立验证使用的配置见 [showcase-renderer-settings.ini](docs/showcase-renderer-settings.ini)，供宿主工程选择性合并，不会自动生效；不要用它覆盖整个项目配置。
+独立验证使用的配置见 [showcase-renderer-settings.ini](Plugins/PRTGI/docs/showcase-renderer-settings.ini)，供宿主工程选择性合并，不会自动生效；不要用它覆盖整个项目配置。
 
 示例使用同一盏 UE DirectionalLight；各盒子的原面光源区域已替换为开口，正面保留观察开口。
 
@@ -89,6 +91,8 @@ Volume 当前为**轴对齐**体积，不支持旋转；每轴最多 32 个 Prob
 每个 Volume 的传输项上限为 **1,600 万项**，每项 64 bytes，最多约 **976.6 MiB** 传输数据；文件加载上限另留 128 MiB 存放几何索引等数据。这不是总内存预算，构建临时副本、CPU 缓存和 GPU 缓冲还会占用额外内存。不会因接近上限自动降低采集分辨率。
 
 ## 内容目录
+
+以下路径相对于插件目录 `Plugins/PRTGI`。
 
 - `Content/Maps`：示例关卡。
 - `Content/Showcase/Materials`、`Meshes` 等：示例所需的项目资源副本，引用重定向到插件内部。

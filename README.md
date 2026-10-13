@@ -1,16 +1,18 @@
 # UE5-PRT-GI
 
-**English** | [简体中文](README.zh-CN.md)
+**English** | [한국어](README.ko.md) | [简体中文](README.zh-CN.md)
+
+[User guide · GitHub Wiki](https://github.com/mazelines/UE5-PRT-GI/wiki)
 
 A probe-based global illumination plugin for static scenes in UE 5.8. Includes a Cornell Box showcase, real-time directional light relighting, 1–4 indirect bounces, independent Probe Volumes, and visualization.
 
-![PRT GI Cornell Box showcase](docs/images/prt-gi-showcase.png)
+![PRT GI Cornell Box showcase](Plugins/PRTGI/docs/images/prt-gi-showcase.png)
 
 ## Installation
 
-**Git LFS** is required when fetching this plugin through Git: precomputed caches are stored in LFS. After cloning, run `git lfs install --local` and `git lfs pull` in the plugin repository directory to ensure that the `.surfels` / `.multi` files contain actual binary data rather than LFS pointer text. The repository root is the plugin directory; install it at the `Plugins/PRTGI` path shown below.
+**Git LFS** is required when fetching this plugin through Git: precomputed caches are stored in LFS. After cloning, run `git lfs install --local` and `git lfs pull` in the repository directory to ensure that the `.surfels` / `.multi` files contain actual binary data rather than LFS pointer text. The repository now contains the `UE_PRT_GI.uproject` host project, with the plugin under `Plugins/PRTGI`. The `ue6` branch's project targets use `Unreal6_0`; the UE 5.8 validation notes below describe the original plugin and do not establish validation of this host project.
 
-1. Place the plugin in `YourProject/Plugins/PRTGI`. This directory must directly contain `PRTGI.uplugin`, without an extra nested repository folder.
+1. To use the bundled host project, open `UE_PRT_GI.uproject`. To install the plugin in another project, copy this repository's `Plugins/PRTGI` directory to `YourProject/Plugins/PRTGI`. This directory must directly contain `PRTGI.uplugin`, without an extra nested repository folder.
 2. Build the **Editor target** using the UE version and C++ toolchain that match your host project. Blueprint projects also need an environment capable of compiling this C++ plugin; add a C++ class first if needed to generate a project target.
 3. In **Edit → Plugins**, search for **UE5-PRT-GI**, enable it, and restart the Editor when prompted.
 
@@ -30,7 +32,7 @@ When comparing against hardware ray tracing Lumen, enable **Support Hardware Ray
 
 The bundled showcase's default map profile temporarily sets `r.Lumen.HardwareRayTracing=1`, `r.Lumen.ScreenProbeGather.ScreenTraces=0`, and `r.EyeAdaptation.CachedLightingPreExposure=8`. Previous values are restored when leaving the map. Its Lumen comparison therefore has diffuse screen traces disabled; it is not the default Lumen configuration. These overrides do not enable missing project-level hardware ray tracing support.
 
-See [showcase-renderer-settings.ini](docs/showcase-renderer-settings.ini) for the configuration used in standalone validation. Selectively merge the settings into your host project as needed; this file does not take effect automatically. Do not use it to overwrite the entire project configuration.
+See [showcase-renderer-settings.ini](Plugins/PRTGI/docs/showcase-renderer-settings.ini) for the configuration used in standalone validation. Selectively merge the settings into your host project as needed; this file does not take effect automatically. Do not use it to overwrite the entire project configuration.
 
 The showcase uses a single shared UE DirectionalLight. The original area-light regions of the boxes have been replaced with openings, and the front openings are retained for viewing.
 
@@ -89,6 +91,8 @@ Probes with geometry audit mismatches or empty captures are excluded from transp
 Each volume is limited to **16 million transport entries**, at 64 bytes per entry, for up to approximately **976.6 MiB** of transport data. The file loading limit allows an additional 128 MiB for geometry indices and other data. This is not a total memory budget: temporary build copies, CPU caches, and GPU buffers require additional memory. Capture resolution is not automatically reduced when approaching the limit.
 
 ## Content Layout
+
+The paths below are relative to the plugin directory, `Plugins/PRTGI`.
 
 - `Content/Maps`: Showcase level.
 - `Content/Showcase/Materials`, `Meshes`, etc.: Copies of project assets required by the showcase, with references redirected to assets inside the plugin.
