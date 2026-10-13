@@ -106,7 +106,7 @@ namespace
     static TAutoConsoleVariable<int32> CVarPRTGIEnable(
         TEXT("r.PRTGI.Enable"),
         1,
-        TEXT("Enable the PRTGI diffuse indirect pass. Requires r.DynamicGlobalIlluminationMethod=3 (Plugin)."),
+        TEXT("Enable the PRTGI diffuse indirect pass. Requires the Plugin GI method (use PRTGI.SetMode PRT)."),
         ECVF_RenderThreadSafe);
 
     static TAutoConsoleVariable<float> CVarPRTGIIntensity(
@@ -384,7 +384,8 @@ namespace
         // 每个 Editor tick 都会查询；缓存指针可避免 ConsoleManager 的高频查找警告。
         static const IConsoleVariable* Method =
             IConsoleManager::Get().FindConsoleVariable(TEXT("r.DynamicGlobalIlluminationMethod"));
-        return Method && Method->GetInt() == 3 && CVarPRTGIEnable.GetValueOnGameThread() != 0;
+        return Method && Method->GetInt() == static_cast<int32>(EDynamicGlobalIlluminationMethod::Plugin)
+            && CVarPRTGIEnable.GetValueOnGameThread() != 0;
     }
 
     bool IsCapturedStaticMeshComponent(
@@ -789,12 +790,12 @@ public:
         {
         case PRTGI::EMode::Offline:
             CVarPRTGIEnable->Set(0, ECVF_SetByConsole);
-            DynamicGIMethod->Set(0, ECVF_SetByConsole);
+            DynamicGIMethod->Set(static_cast<int32>(EDynamicGlobalIlluminationMethod::None), ECVF_SetByConsole);
             break;
         case PRTGI::EMode::PRT:
         {
             CVarPRTGIEnable->Set(1, ECVF_SetByConsole);
-            DynamicGIMethod->Set(3, ECVF_SetByConsole);
+            DynamicGIMethod->Set(static_cast<int32>(EDynamicGlobalIlluminationMethod::Plugin), ECVF_SetByConsole);
             if (PublishedTransport_GameThread.IsValid())
             {
                 UWorld* World = FindPreferredWorld();
@@ -808,7 +809,7 @@ public:
         }
         case PRTGI::EMode::Lumen:
             CVarPRTGIEnable->Set(0, ECVF_SetByConsole);
-            DynamicGIMethod->Set(1, ECVF_SetByConsole);
+            DynamicGIMethod->Set(static_cast<int32>(EDynamicGlobalIlluminationMethod::Lumen), ECVF_SetByConsole);
             break;
         }
 
