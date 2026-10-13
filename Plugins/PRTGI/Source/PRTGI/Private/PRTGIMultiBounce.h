@@ -2,6 +2,7 @@
 #include "CoreMinimal.h"
 #include "Async/Future.h"
 #include "PRTGISurfels.h"
+struct FPRTGIGPUCoefficients;
 
 namespace PRTGI
 {
@@ -24,6 +25,9 @@ struct FMultiBounceData
     float CellSize = 10.f;
     int32 ProbeCount = 0;
     TArray<FVector4f> Surfaces; // position, normal, diffuse reflectance (3 float4 / source)
+    // Geometric normal and numerical origin offset, separate from the shading normal.
+    // Empty for v3 caches; zero normals retain the legacy offset for unbound samples.
+    TArray<FVector4f> SourceGeometry;
     TArray<FVector4f> Triangles; // vertex, edge1, edge2; vertex.w = CastShadow
     TArray<FVector4f> Nodes; // preorder BVH: bounds min/max; leaf first/count, internal -1/escape
     TArray<FMultiBounceTerm> Terms;
@@ -37,6 +41,12 @@ struct FMultiBounceData
     double QuantizationRelativeError = 0;
     int32 CorrectedSamples = 0;
     float MaxPositionCorrectionCm = 0;
+    int32 CacheVersion = 6;
+    int32 BoundSamples = 0;
+    int32 UnboundSamples = 0;
+    int32 UnmappedByBounce[3] = {};
+    int32 MaterialHits = 0;
+    FString QualityReport() const;
     bool Save(const FString& Path) const;
     static TSharedPtr<FMultiBounceData, ESPMode::ThreadSafe> Load(const FString& Path, uint64 Signature, float CellSize, uint32 BaseCRC);
     void EvaluateCPU(const FVector3f& Sun, const FVector3f& Color, float Lux, bool Shadows, float Bias,
@@ -61,8 +71,8 @@ public:
     ~FMultiBounceGPU();
     bool IsPending() const;
     void Submit(TSharedPtr<FMultiBounceData, ESPMode::ThreadSafe> Data, FVector3f Sun, FVector3f Color,
-        float Lux, bool Shadows, float Bias, int32 Bounces);
-    bool Poll(TArray<FVector4f>& Output);
+        float Lux, bool Shadows, float Bias, int32 Bounces, bool Readback);
+    bool Poll(TArray<FVector4f>& Output,TSharedPtr<const FPRTGIGPUCoefficients,ESPMode::ThreadSafe>& GPUOutput);
 private:
     struct FState;
     TSharedPtr<FState, ESPMode::ThreadSafe> State;

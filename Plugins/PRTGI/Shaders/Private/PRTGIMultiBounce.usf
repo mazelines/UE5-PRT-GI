@@ -1,6 +1,8 @@
 #include "/Engine/Public/Platform.ush"
 
 StructuredBuffer<float4> Surfaces;
+StructuredBuffer<float4> SourceGeometry;
+uint HasSourceGeometry;
 StructuredBuffer<float4> Triangles;
 StructuredBuffer<float4> Nodes;
 struct FTransportTerm { uint Source; uint Bounce; uint Packed[14]; };
@@ -55,8 +57,12 @@ void ShadeSourcesCS(uint3 DT:SV_DispatchThreadID)
 {
     uint S=DT.x;if(S>=SourceCount)return;
     float3 P=Surfaces[S*3].xyz,N=Surfaces[S*3+1].xyz,Rho=Surfaces[S*3+2].xyz;
-    float Cos=max(0,dot(N,SunDirection));
-    bool Blocked=CastShadows!=0 && Cos>0 && SunLux>0 && Shadowed(P+N*ShadowBias,SunDirection);
+    float4 Geometry=HasSourceGeometry!=0?SourceGeometry[S]:float4(0,0,0,0);
+    bool Bound=dot(Geometry.xyz,Geometry.xyz)>.5;
+    float3 Ng=Bound?Geometry.xyz:N;
+    float Offset=Bound?Geometry.w:ShadowBias;
+    float Cos=dot(Ng,SunDirection)>0?max(0,dot(N,SunDirection)):0;
+    bool Blocked=CastShadows!=0 && Cos>0 && SunLux>0 && Shadowed(P+Ng*Offset,SunDirection);
     OutRadiance[S]=float4(Blocked?float3(0,0,0):Rho*SunColor*(SunLux*Cos/3.141592653589793),0);
 }
 groupshared float3 Reduction[64*9];

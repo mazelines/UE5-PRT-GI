@@ -55,7 +55,19 @@ DEFINE_LOG_CATEGORY_STATIC(LogPRTGI, Log, All);
 namespace
 {
     TAutoConsoleVariable<int32> CVarPRTProbeVisibility(TEXT("r.PRTGI.ProbeVisibility"),1,
-        TEXT("Use cached first-hit geometry to reject occluded probe interpolation. 0: diagnostic legacy comparison."),ECVF_RenderThreadSafe);
+        TEXT("Probe visibility: 0 disabled, 1 first-hit planes, 2 depth moments, 3 exact static BVH segments (higher cost)."),ECVF_RenderThreadSafe);
+    TAutoConsoleVariable<float> CVarPRTVisibilityBias(TEXT("r.PRTGI.VisibilityBiasCm"),1.f,
+        TEXT("First-hit plane / depth moment receiver bias in cm. Keep fixed for controlled A/B captures."),ECVF_RenderThreadSafe);
+    TAutoConsoleVariable<float> CVarPRTHemisphereTransition(TEXT("r.PRTGI.HemisphereTransition"),0.f,
+        TEXT("Positive-hemisphere transition width as a fraction of probe spacing; 0 preserves legacy, try 0.05 for A/B."),ECVF_RenderThreadSafe);
+    TAutoConsoleVariable<int32> CVarPRTDebug(TEXT("r.PRTGI.Debug"),0,
+        TEXT("0 lighting, 1 visibility acceptance, 2 interpolation support, 3 hemisphere rejection, 4 contact visibility. Red=low support/high rejection."),ECVF_RenderThreadSafe);
+    TAutoConsoleVariable<int32> CVarPRTContactSamples(TEXT("r.PRTGI.ContactSamples"),0,
+        TEXT("Short-range static diffuse contact occlusion rays per pixel, 0 disables, maximum 16."),ECVF_RenderThreadSafe);
+    TAutoConsoleVariable<float> CVarPRTContactRadius(TEXT("r.PRTGI.ContactRadiusCm"),20.f,
+        TEXT("Maximum range of the diffuse contact correction in cm."),ECVF_RenderThreadSafe);
+    TAutoConsoleVariable<float> CVarPRTContactBias(TEXT("r.PRTGI.ContactBiasCm"),.1f,
+        TEXT("Contact ray origin and minimum intersection distance in cm."),ECVF_RenderThreadSafe);
     constexpr uint32 PRTGIDataMagic = 0x49475450; // "PTGI"
     constexpr int32 PRTGIDataVersion = 2;
     constexpr int32 PRTGIMaxProbeCount = 32 * 32 * 32;
@@ -163,8 +175,19 @@ namespace
         SHADER_PARAMETER_RDG_BUFFER_SRV(StructuredBuffer<float4>, ProbeCoefficients)
         SHADER_PARAMETER_RDG_BUFFER_SRV(StructuredBuffer<float4>, ProbeVolumes)
         SHADER_PARAMETER_RDG_BUFFER_SRV(StructuredBuffer<float4>, ProbeVisibilityPlanes)
+        SHADER_PARAMETER_RDG_BUFFER_SRV(StructuredBuffer<float2>, ProbeDepthMoments)
         SHADER_PARAMETER_RDG_BUFFER_SRV(StructuredBuffer<float4>, ProbeVisibilityVolumes)
         SHADER_PARAMETER(uint32, ProbeVisibilityEnabled)
+        SHADER_PARAMETER(float, VisibilityBiasCm)
+        SHADER_PARAMETER(float, HemisphereTransition)
+        SHADER_PARAMETER(uint32, DebugMode)
+        SHADER_PARAMETER_RDG_BUFFER_SRV(StructuredBuffer<float4>, ContactTriangles)
+        SHADER_PARAMETER_RDG_BUFFER_SRV(StructuredBuffer<float4>, ContactNodes)
+        SHADER_PARAMETER(uint32, ContactNodeCount)
+        SHADER_PARAMETER(uint32, ContactSamples)
+        SHADER_PARAMETER(float, ContactRadius)
+        SHADER_PARAMETER(float, ContactBias)
+        SHADER_PARAMETER(FVector3f, ContactWorldTranslation)
         SHADER_PARAMETER_RDG_TEXTURE_UAV(RWTexture2D<float4>, SceneColorOutput)
         SHADER_PARAMETER_SAMPLER(SamplerState, PointClampSampler)
         SHADER_PARAMETER(uint32, VolumeCount)
@@ -200,6 +223,19 @@ namespace
     };
 
     IMPLEMENT_GLOBAL_SHADER(FPRTGIApplyCS, "/Plugin/PRTGI/Private/PRTGIApply.usf", "MainCS", SF_Compute);
+
+    class FPRTGIPublishCS : public FGlobalShader
+    {
+        DECLARE_GLOBAL_SHADER(FPRTGIPublishCS);
+        SHADER_USE_PARAMETER_STRUCT(FPRTGIPublishCS,FGlobalShader);
+        BEGIN_SHADER_PARAMETER_STRUCT(FParameters,)
+            SHADER_PARAMETER_RDG_BUFFER_SRV(StructuredBuffer<float4>,SourceSH)
+            SHADER_PARAMETER_RDG_BUFFER_UAV(RWStructuredBuffer<float4>,DestinationSH)
+            SHADER_PARAMETER(uint32,CoefficientCount)
+            SHADER_PARAMETER(uint32,DestinationOffset)
+        END_SHADER_PARAMETER_STRUCT()
+    };
+    IMPLEMENT_GLOBAL_SHADER(FPRTGIPublishCS,"/Plugin/PRTGI/Private/PRTGIPublish.usf","PublishCS",SF_Compute);
 
     ADirectionalLight* FindPrimaryDirectionalLight(UWorld* World)
     {
@@ -970,7 +1006,8 @@ private:
         {
             ActorVolumes->Reset(); ActorVolumeWorld.Reset();
             ENQUEUE_RENDER_COMMAND(PRTGIClearActorVolumes)([this](FRHICommandListImmediate&)
-            { ActorRenderVolumes.Reset(); ActorRenderScene=nullptr; VisibilitySources_RenderThread.Reset(); VisibilityBuffer_RenderThread.SafeRelease(); });
+            { ActorRenderVolumes.Reset(); ActorRenderScene=nullptr; VisibilitySources_RenderThread.Reset(); VisibilityBuffer_RenderThread.SafeRelease(); DepthMomentsBuffer_RenderThread.SafeRelease();
+              ContactGeometry_RenderThread.Reset();ContactTriangles_RenderThread.SafeRelease();ContactNodes_RenderThread.SafeRelease(); });
         }
         if (ProbeVisualization && ProbeVisualization->GetWorld() == World) ClearProbeVisualization();
         if (SurfelBake && SurfelBakeWorld.Get()==World)
@@ -2211,7 +2248,7 @@ private:
             PackedVolumes.Add(FVector4f(ReceiverMax + Translation, float(Volume.BlendFace)));
             PackedCoefficients.Append(Volume.Coefficients);
             VisibilitySources.Add(Volume.Visibility);
-            VisibilityInfos.Add(FVector4f(float(VisibilityOffset),Volume.Visibility?float(Volume.Visibility->Resolution):0.f,0,0));
+            VisibilityInfos.Add(FVector4f(float(VisibilityOffset),Volume.Visibility?float(Volume.Visibility->Resolution):0.f,Volume.Geometry && Volume.Geometry->CacheVersion>=6?1.f:0.f,0));
             if(Volume.Visibility)VisibilityOffset+=Volume.Visibility->Planes.Num();
         };
         if (bHasTransport)
@@ -2226,18 +2263,50 @@ private:
         if (PackedVolumes.IsEmpty()) PackedVolumes.Init(FVector4f(0.0f), 5);
         if (PackedCoefficients.IsEmpty()) PackedCoefficients.Add(FVector4f(0.0f));
         FRDGBufferRef CoefficientBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("PRTGI.ProbeCoefficients"), PackedCoefficients);
+        if(bHasActors)
+        {
+            uint32 Offset=0;
+            for(const auto& Volume:ActorRenderVolumes)
+            {
+                if(Volume.GPUCoefficients && Volume.GPUCoefficients->Buffer)
+                {
+                    auto* Copy=GraphBuilder.AllocParameters<FPRTGIPublishCS::FParameters>();
+                    Copy->SourceSH=GraphBuilder.CreateSRV(GraphBuilder.RegisterExternalBuffer(Volume.GPUCoefficients->Buffer));
+                    Copy->DestinationSH=GraphBuilder.CreateUAV(CoefficientBuffer);
+                    Copy->CoefficientCount=Volume.Coefficients.Num();Copy->DestinationOffset=Offset;
+                    TShaderMapRef<FPRTGIPublishCS> Shader(View.ShaderMap);
+                    FComputeShaderUtils::AddPass(GraphBuilder,RDG_EVENT_NAME("PRT Publish GPU Coefficients"),Shader,Copy,
+                        FIntVector(FMath::DivideAndRoundUp(Copy->CoefficientCount,64u),1,1));
+                }
+                Offset+=Volume.Coefficients.Num();
+            }
+        }
         FRDGBufferRef VolumeBuffer = CreateStructuredBuffer(GraphBuilder, TEXT("PRTGI.ProbeVolumes"), PackedVolumes);
-        FRDGBufferRef VisibilityBuffer;
+        TSharedPtr<const PRTGI::FMultiBounceData,ESPMode::ThreadSafe> ContactGeometry;
+        if(bHasActors && (CVarPRTContactSamples.GetValueOnRenderThread()>0 || CVarPRTProbeVisibility.GetValueOnRenderThread()==3))
+            for(const auto& Volume:ActorRenderVolumes)if(Volume.Geometry){ContactGeometry=Volume.Geometry;break;}
+        if(ContactGeometry!=ContactGeometry_RenderThread || !ContactTriangles_RenderThread)
+        {
+            const TArray<FVector4f> Empty{FVector4f(0)};
+            ContactTriangles_RenderThread=GraphBuilder.ConvertToExternalBuffer(CreateStructuredBuffer(GraphBuilder,TEXT("PRTGI.ContactTriangles"),ContactGeometry?ContactGeometry->Triangles:Empty));
+            ContactNodes_RenderThread=GraphBuilder.ConvertToExternalBuffer(CreateStructuredBuffer(GraphBuilder,TEXT("PRTGI.ContactNodes"),ContactGeometry?ContactGeometry->Nodes:Empty));
+            ContactGeometry_RenderThread=ContactGeometry;
+        }
+        FRDGBufferRef VisibilityBuffer,DepthMomentsBuffer;
         if(VisibilitySources!=VisibilitySources_RenderThread || !VisibilityBuffer_RenderThread)
         {
             TArray<FVector4f> Planes;
-            for(const auto& Source:VisibilitySources)if(Source)Planes.Append(Source->Planes);
+            TArray<FVector2f> Moments;
+            for(const auto& Source:VisibilitySources)if(Source){Planes.Append(Source->Planes);Moments.Append(Source->DepthMoments);}
             if(Planes.IsEmpty())Planes.Add(FVector4f(0));
+            if(Moments.IsEmpty())Moments.Add(FVector2f(0,0));
             VisibilityBuffer=CreateStructuredBuffer(GraphBuilder,TEXT("PRTGI.ProbeVisibilityPlanes"),Planes);
+            DepthMomentsBuffer=CreateStructuredBuffer(GraphBuilder,TEXT("PRTGI.ProbeDepthMoments"),Moments);
             GraphBuilder.QueueBufferExtraction(VisibilityBuffer,&VisibilityBuffer_RenderThread);
+            GraphBuilder.QueueBufferExtraction(DepthMomentsBuffer,&DepthMomentsBuffer_RenderThread);
             VisibilitySources_RenderThread=VisibilitySources;
         }
-        else VisibilityBuffer=GraphBuilder.RegisterExternalBuffer(VisibilityBuffer_RenderThread);
+        else {VisibilityBuffer=GraphBuilder.RegisterExternalBuffer(VisibilityBuffer_RenderThread);DepthMomentsBuffer=GraphBuilder.RegisterExternalBuffer(DepthMomentsBuffer_RenderThread);}
         if(VisibilityInfos.IsEmpty())VisibilityInfos.Add(FVector4f(0));
         FRDGBufferRef VisibilityInfoBuffer=CreateStructuredBuffer(GraphBuilder,TEXT("PRTGI.ProbeVisibilityVolumes"),VisibilityInfos);
 
@@ -2251,8 +2320,19 @@ private:
         Parameters->PointClampSampler = TStaticSamplerState<SF_Point, AM_Clamp, AM_Clamp, AM_Clamp>::GetRHI();
         Parameters->ProbeVolumes = GraphBuilder.CreateSRV(VolumeBuffer);
         Parameters->ProbeVisibilityPlanes=GraphBuilder.CreateSRV(VisibilityBuffer);
+        Parameters->ProbeDepthMoments=GraphBuilder.CreateSRV(DepthMomentsBuffer);
         Parameters->ProbeVisibilityVolumes=GraphBuilder.CreateSRV(VisibilityInfoBuffer);
-        Parameters->ProbeVisibilityEnabled=CVarPRTProbeVisibility.GetValueOnRenderThread()!=0?1u:0u;
+        Parameters->ProbeVisibilityEnabled=uint32(FMath::Clamp(CVarPRTProbeVisibility.GetValueOnRenderThread(),0,3));
+        Parameters->VisibilityBiasCm=FMath::Max(.001f,CVarPRTVisibilityBias.GetValueOnRenderThread());
+        Parameters->HemisphereTransition=FMath::Clamp(CVarPRTHemisphereTransition.GetValueOnRenderThread(),0.f,.5f);
+        Parameters->DebugMode=uint32(FMath::Clamp(CVarPRTDebug.GetValueOnRenderThread(),0,4));
+        Parameters->ContactTriangles=GraphBuilder.CreateSRV(GraphBuilder.RegisterExternalBuffer(ContactTriangles_RenderThread));
+        Parameters->ContactNodes=GraphBuilder.CreateSRV(GraphBuilder.RegisterExternalBuffer(ContactNodes_RenderThread));
+        Parameters->ContactNodeCount=ContactGeometry?ContactGeometry->Nodes.Num()/2:0;
+        Parameters->ContactSamples=FMath::Clamp(CVarPRTContactSamples.GetValueOnRenderThread(),0,16);
+        Parameters->ContactRadius=FMath::Clamp(CVarPRTContactRadius.GetValueOnRenderThread(),0.f,200.f);
+        Parameters->ContactBias=FMath::Clamp(CVarPRTContactBias.GetValueOnRenderThread(),.001f,1.f);
+        Parameters->ContactWorldTranslation=Translation;
         Parameters->VolumeCount = VolumeCount;
         Parameters->ViewRectMin = View.ViewRect.Min;
         Parameters->ViewSize = View.ViewRect.Size();
@@ -2515,6 +2595,9 @@ private:
         ConsoleObjects.Add(Console.RegisterConsoleCommand(TEXT("PRTGI.ValidateMultiBounce"),
             TEXT("Compare published GPU transport against CPU and one-bounce reference; writes Saved/PRTMultiBounceValidation.json."),
             FConsoleCommandDelegate::CreateLambda([this]{UE_LOG(LogPRTGI,Display,TEXT("%s"),*ActorVolumes->ValidateMultiBounce());}),ECVF_Default));
+        ConsoleObjects.Add(Console.RegisterConsoleCommand(TEXT("PRTGI.DumpQuality"),
+            TEXT("Write cache version, surface binding, missing-hit and bounce statistics to Saved/PRTGIQuality.json without relighting."),
+            FConsoleCommandDelegate::CreateLambda([this]{UE_LOG(LogPRTGI,Display,TEXT("%s"),*ActorVolumes->DumpQualityReport());}),ECVF_Default));
         ConsoleObjects.Add(Console.RegisterConsoleCommand(TEXT("PRTGI.BakeSurfels"),
             TEXT("Bake light-independent local G-buffer geometry: <localIndex>. Separate .surfels file; no directional matrix overwrite."),
             FConsoleCommandWithArgsDelegate::CreateRaw(this,&FPRTGIModule::RequestSurfelBake),ECVF_Default));
@@ -2615,6 +2698,9 @@ private:
     TArray<FPRTGIRenderVolume> ActorRenderVolumes;
     TArray<TSharedPtr<const FPRTGIProbeVisibility,ESPMode::ThreadSafe>> VisibilitySources_RenderThread;
     TRefCountPtr<FRDGPooledBuffer> VisibilityBuffer_RenderThread;
+    TRefCountPtr<FRDGPooledBuffer> DepthMomentsBuffer_RenderThread;
+    TSharedPtr<const PRTGI::FMultiBounceData,ESPMode::ThreadSafe> ContactGeometry_RenderThread;
+    TRefCountPtr<FRDGPooledBuffer> ContactTriangles_RenderThread,ContactNodes_RenderThread;
     const FScene* ActorRenderScene = nullptr;
     bool bActorRenderMode = false;
     ULineBatchComponent* ProbeVisualization = nullptr; // Explicit root, released on world change/shutdown.

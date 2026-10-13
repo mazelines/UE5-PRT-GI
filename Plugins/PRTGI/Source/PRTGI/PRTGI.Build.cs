@@ -26,6 +26,9 @@ public class PRTGI : ModuleRules
             "SlateCore"
         });
 
+        if (Target.bBuildEditor)
+            PrivateDependencyModuleNames.AddRange(new[] { "MaterialBaking", "MaterialUtilities", "MeshDescription", "StaticMeshDescription" });
+
         // UE 5.8 的 GI Plugin delegate 仍声明在 Renderer/Private。
         // 此路径让插件保持 project-local，但会明确绑定当前引擎版本。
         PrivateIncludePaths.AddRange(new[]

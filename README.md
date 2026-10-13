@@ -142,3 +142,39 @@ PRTGI.Status
 ```
 
 `PRTGI.SetMode Offline` is a legacy command name for exiting dynamic GI. It does not automatically generate offline lighting or a Path Tracing reference image.
+
+## Surfel Quality Diagnostics
+
+New v6 transport caches bind captured samples to triangles, separate geometric and shading normals, and evaluate secondary hits using per-triangle material charts with original UVs and vertex colors. The bake includes base color, metallic and tangent-space normals. Transport remains Lambertian. Receiver shading uses GBuffer specular/roughness and UE's analytic GGX energy approximation with multiple-scattering compensation to reserve energy for the specular lobe. This receiver correction approximates a single GGX material; it does not implement all Substrate layers, glossy transport, dynamic occluders, sky lighting or emissive transport. Existing v3–v5 caches remain readable and retain their version on save. Rebuild every participating volume to adopt v6 consistently.
+
+The material baker checks every interior chart texel. If primitive transforms cause raster clipping, only materials proven independent of vertex/world data may retry without primitive data. Other failures stop the bake and retain the previous cache. Charts use 16×16 tiles per triangle and therefore do not preserve arbitrarily fine texture detail.
+
+`PRTGI.DumpQuality` writes cache versions, material-hit coverage, per-bounce missing-hit statistics and GPU residency to `Saved/PRTGIQuality.json`. Missing-hit fractions are not energy-loss fractions. For GPU/CPU validation, set `r.PRTGI.GPUReadback 1`, allow relighting to finish, then run `PRTGI.ValidateMultiBounce`. It writes `Saved/PRTMultiBounceValidation.json` and may briefly block the editor. Restore `GPUReadback 0` afterward. Normal rendering keeps coefficients on the GPU; readback is needed only for diagnostics and probe visualization.
+
+```text
+python Plugins/PRTGI/Tools/quality_report.py --output Saved/PRTGIQuality/caches.json Plugins/PRTGI/Content/Precomputed/Volumes
+python -m pip install numpy OpenEXR
+python Plugins/PRTGI/Tools/compare_hdr.py reference.exr candidate.exr --roi 230 150 708 570
+```
+
+The HDR tool compares aligned linear RGB without exposure fitting. Use `PreTonemapHDRColor`, identical camera/resolution/light inputs and bounce limits. For diffuse indirect-only comparisons, disable the DirectLighting show flag and exclude indirect specular in a temporary post-process volume while keeping the Specular show flag enabled. The remaining reference can still include mixed diffuse/specular paths, so it is not an exact oracle for Lambertian PRT. Disable emissive sources and the denoiser for this test; ensure the path-intensity clamp does not clip the reference. The showcase reference uses 512 samples, four bounces, unit pre-exposure and `r.PathTracing.MaxPathIntensity 65504`.
+
+| Console variable | Default | Meaning |
+|---|---:|---|
+| `r.PRTGI.GPUResident` | 1 | Keep relit coefficients on the GPU; 0 uses readback/upload |
+| `r.PRTGI.GPUReadback` | 0 | Retain CPU coefficients for numeric diagnostics |
+| `r.PRTGI.ProbeVisibility` | 1 | 0 disabled, 1 first-hit planes, 2 experimental depth moments, 3 static BVH segments |
+| `r.PRTGI.VisibilityBiasCm` | 1 | Receiver visibility bias in cm |
+| `r.PRTGI.HemisphereTransition` | 0 | Positive-hemisphere transition as a fraction of probe spacing |
+| `r.PRTGI.ContactSamples` | 0 | Optional static contact occlusion: 0–16 rays per pixel |
+| `r.PRTGI.ContactRadiusCm` | 20 | Maximum contact ray distance |
+| `r.PRTGI.ContactBiasCm` | 0.1 | Contact ray origin/intersection bias |
+| `r.PRTGI.Debug` | 0 | 1 visibility, 2 interpolation support, 3 hemisphere acceptance, 4 contact visibility |
+
+Contact occlusion is a short-range diffuse approximation, with extra GPU cost and possible sampling noise. It does not replace transported radiance. Depth moments blend four neighboring capture samples and are experimental; they produced wall artifacts in the showcase. Exact BVH visibility also remains optional. Restore `IndirectOnly 0`, `Debug 0`, `ProbeVisibility 1`, `HemisphereTransition 0` after diagnostics.
+
+The implementation follows the geometric/shading-normal and reconstruction guidance in [EA GIBS, SIGGRAPH 2024](https://www.advances.realtimerendering.com/s2024/content/EA-GIBS2/Apers_Advances-s2024_Shipping-Dynamic-GI.pdf). [SurfelPlus, SIGGRAPH 2025 poster](https://github.com/WANG-Ruipeng/SurfelPlus/blob/master/docs/files/Poster.pdf) and [DDGI](https://arxiv.org/abs/2009.10796) inform further comparisons; this plugin is not an implementation of their complete systems.
+
+Showcase validation on UE6: all six v6 caches have zero unmapped secondary hits (previously 0.68–9.26%). At the fixed camera, RGB relative RMSE against the diffuse-component HDR reference changed from **23.24% / 32.61% / 24.84%** to **18.02% / 16.70% / 11.24%** for ClassicBox / ColorBox / contact-region ROIs with 8 contact samples. These are limited-region comparisons, not a claim of complete scene equivalence. GPU/CPU coefficient error is at most `3.75e-5`; five focused automation tests pass. MetalBox and ShinyBox retain their existing capture-audit exclusions.
+
+On an RTX 4090, three static-frame measurements gave a median PRT apply cost of **0.499 ms** without contact correction and **2.725 ms** with 8 samples (1740×590 input, TSR to 2164×733). Total six-volume transport files grew from **1651 MiB to 2157 MiB**. The host project's quality preset enables 8 contact samples; the plugin default remains 0. Set `r.PRTGI.ContactSamples 0` for the lower-cost option. Detailed conditions, ROI coordinates, cache counters and remaining limitations are in [validation_showcase.json](Plugins/PRTGI/Tools/validation_showcase.json).

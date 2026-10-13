@@ -73,11 +73,14 @@ TSharedPtr<const FPRTGIProbeVisibility, ESPMode::ThreadSafe> FPRTGIProbeVisibili
     const int32 Stride=6*Result->Resolution*Result->Resolution;
     // Empty texels are sky/missing front-face samples. They must not manufacture blockers.
     Result->Planes.Init(FVector4f(0,0,0,0),Base.Validity.Num()*Stride);
+    Result->DepthMoments.Init(FVector2f(0,0),Base.Validity.Num()*Stride);
     for(const auto& S:Base.Samples)
     {
         const FVector3f D=S.Position-FVector3f(Base.ProbePosition(S.Probe));
         if(D.SizeSquared()<1.e-8f)continue;
-        Result->Planes[S.Probe*Stride+CubeTexel(D,Result->Resolution)]=FVector4f(S.Normal,FVector3f::DotProduct(S.Normal,D));
+        const int32 Index=S.Probe*Stride+CubeTexel(D,Result->Resolution);
+        Result->Planes[Index]=FVector4f(S.Normal,FVector3f::DotProduct(S.Normal,D));
+        Result->DepthMoments[Index]=FVector2f(D.Size(),D.SizeSquared());
     }
     return Result;
 }
@@ -125,12 +128,16 @@ bool FPRTGIVisibilityCubeTest::RunTest(const FString&)
     {
         const auto P=Visibility->Planes[I];const auto N=FVector3f(P);
         TestTrue(TEXT("First-hit plane is 100cm from the probe"),FMath::IsNearlyEqual(P.W,-100.f,.001f));
+        const auto M=Visibility->DepthMoments[I];
+        TestTrue(TEXT("Depth moment is a positive geometric distance"),M.X>=100.f);
+        TestTrue(TEXT("Single sample moment has zero variance"),FMath::IsNearlyEqual(M.Y,M.X*M.X,.02f));
         // Receiver before the wall is visible; on-wall must not self-shadow; beyond is occluded.
         TestTrue(TEXT("Receiver before wall"),P.W-FVector3f::DotProduct(N,-N*50)<0);
         TestTrue(TEXT("Receiver on wall"),FMath::IsNearlyZero(P.W-FVector3f::DotProduct(N,-N*100),.001f));
         TestTrue(TEXT("Receiver through wall"),P.W-FVector3f::DotProduct(N,-N*150)>2);
     }
     TestTrue(TEXT("Missing capture never becomes an invented wall"),Visibility->Planes[1536].IsNearlyZero());
+    TestTrue(TEXT("Missing depth moment remains unknown"),Visibility->DepthMoments[1536].IsNearlyZero());
     return true;
 }
 #endif

@@ -8,8 +8,19 @@ Texture2D<float> DepthTexture;
 StructuredBuffer<float4> ProbeCoefficients;
 StructuredBuffer<float4> ProbeVolumes;
 StructuredBuffer<float4> ProbeVisibilityPlanes;
+StructuredBuffer<float2> ProbeDepthMoments;
 StructuredBuffer<float4> ProbeVisibilityVolumes;
 uint ProbeVisibilityEnabled;
+float VisibilityBiasCm;
+float HemisphereTransition;
+uint DebugMode;
+StructuredBuffer<float4> ContactTriangles;
+StructuredBuffer<float4> ContactNodes;
+uint ContactNodeCount;
+uint ContactSamples;
+float ContactRadius;
+float ContactBias;
+float3 ContactWorldTranslation;
 RWTexture2D<float4> SceneColorOutput;
 
 SamplerState PointClampSampler;
@@ -20,6 +31,58 @@ float IndirectIntensity;
 uint ShouldUsePreExposure;
 uint OverwriteSceneColor;
 uint HasTransport;
+
+bool ContactBoxHit(float3 O,float3 D,float3 Min,float3 Max,float Limit)
+{
+    float Lo=0,Hi=Limit;
+    [unroll]for(uint Axis=0;Axis<3;++Axis)
+    {
+        if(abs(D[Axis])<1.e-8){if(O[Axis]<Min[Axis] || O[Axis]>Max[Axis])return false;}
+        else {float A=(Min[Axis]-O[Axis])/D[Axis],B=(Max[Axis]-O[Axis])/D[Axis];Lo=max(Lo,min(A,B));Hi=min(Hi,max(A,B));}
+    }
+    return Hi>=Lo;
+}
+
+float ContactDistance(float3 O,float3 D,float MaxDistance,float MinDistance)
+{
+    float Limit=MaxDistance;
+    uint Node=0;
+    [loop]while(Node<ContactNodeCount)
+    {
+        float4 Min=ContactNodes[Node*2],Max=ContactNodes[Node*2+1];
+        if(!ContactBoxHit(O,D,Min.xyz,Max.xyz,Limit)){Node=Min.w<0?(uint)Max.w:Node+1;continue;}
+        if(Min.w<0){++Node;continue;}
+        [loop]for(uint T=(uint)Min.w;T<(uint)(Min.w+Max.w);++T)
+        {
+            float3 A=ContactTriangles[T*3].xyz,E1=ContactTriangles[T*3+1].xyz,E2=ContactTriangles[T*3+2].xyz;
+            float3 P=cross(D,E2);float Det=dot(E1,P);if(abs(Det)<1.e-8)continue;
+            float3 Delta=O-A;float U=dot(Delta,P)/Det;if(U<0 || U>1)continue;
+            float3 Q=cross(Delta,E1);float V=dot(D,Q)/Det;if(V<0 || U+V>1)continue;
+            float Distance=dot(E2,Q)/Det;if(Distance>MinDistance && Distance<Limit)Limit=Distance;
+        }
+        ++Node;
+    }
+    return Limit;
+}
+
+float ContactVisibility(float3 Position,float3 Normal,uint2 Pixel)
+{
+    if(ContactNodeCount==0 || ContactSamples==0 || ContactRadius<=0)return 1;
+    float3 T=normalize(cross(abs(Normal.z)<.99?float3(0,0,1):float3(0,1,0),Normal));
+    float3 B=cross(Normal,T);
+    // Screen-stable scrambling allows TAA to filter spatial noise without
+    // requiring a separate history or ghosting after light changes.
+    float Rotation=frac(sin(dot(float2(Pixel),float2(12.9898,78.233)))*43758.5453);
+    float Sum=0;
+    [loop]for(uint I=0;I<ContactSamples;++I)
+    {
+        float U=(I+.5)/ContactSamples,V=frac(I*.61803398875+Rotation);
+        float3 D=(T*cos(2*PI*V)+B*sin(2*PI*V))*sqrt(U)+Normal*sqrt(1-U);
+        float Distance=ContactDistance(Position-ContactWorldTranslation+Normal*ContactBias,D,ContactRadius,ContactBias);
+        Sum+=saturate(Distance/ContactRadius);
+    }
+    return Sum/ContactSamples;
+}
 
 void EvaluateSH3(float3 D, out float Basis[9])
 {
@@ -118,10 +181,21 @@ float ProbeVisibility(uint Volume,int ProbeIndexInVolume,float3 ProbeToSurface)
 {
     int R=int(ProbeVisibilityVolumes[Volume].y);
     if(ProbeVisibilityEnabled==0 || R==0 || dot(ProbeToSurface,ProbeToSurface)<1.e-8)return 1;
+    if(ProbeVisibilityEnabled==3 && ContactNodeCount>0)
+    {
+        int3 Counts=int3(ProbeVolumes[Volume*5+2].xyz);
+        int3 Coordinate=int3(ProbeIndexInVolume%Counts.x,(ProbeIndexInVolume/Counts.x)%Counts.y,ProbeIndexInVolume/(Counts.x*Counts.y));
+        float3 Origin=ProbeVolumes[Volume*5].xyz-ContactWorldTranslation
+            +float3(Coordinate)/((Counts-1)*ProbeVolumes[Volume*5+1].xyz);
+        float Distance=length(ProbeToSurface),Limit=max(0,Distance-VisibilityBiasCm);
+        return ContactDistance(Origin,ProbeToSurface/Distance,Limit,.001)<Limit?0:1;
+    }
     int Face;float2 UV;VisibilityCubeUV(ProbeToSurface,Face,UV);
     float2 Pixel=UV*R-.5,T=frac(Pixel);int2 Base=int2(floor(Pixel));
     int Offset=int(ProbeVisibilityVolumes[Volume].x)+ProbeIndexInVolume*6*R*R;
     float Visibility=0;
+    float2 Moments=0;
+    float Coverage=0;
     [unroll]for(int I=0;I<4;++I)
     {
         int2 Tap=int2(I&1,I>>1),XY=Base+Tap;int F=Face;
@@ -130,20 +204,38 @@ float ProbeVisibility(uint Volume,int ProbeIndexInVolume,float3 ProbeToSurface)
             float2 Remapped;VisibilityCubeUV(VisibilityCubeDirection(Face,(float2(XY)+.5)/R),F,Remapped);
             XY=clamp(int2(Remapped*R),0,R-1);
         }
-        float4 Plane=ProbeVisibilityPlanes[Offset+(F*R+XY.y)*R+XY.x];
+        int Index=Offset+(F*R+XY.y)*R+XY.x;
+        float4 Plane=ProbeVisibilityPlanes[Index];
         // Compare against the first-hit plane, not bilinearly blended depths:
         // blending depths creates fictitious blockers/holes at silhouette edges.
         // On-surface receivers remain visible; 1cm bias covers capture reconstruction error.
         float Behind=Plane.w-dot(Plane.xyz,ProbeToSurface);
-        float Visible=1-smoothstep(1.0,2.0,Behind);
+        float Visible=1-smoothstep(VisibilityBiasCm,VisibilityBiasCm*2,Behind);
         float2 W=lerp(1-T,T,float2(Tap));
         Visibility+=W.x*W.y*Visible;
+        if(ProbeVisibilityEnabled==2)
+        {
+            float2 M=ProbeDepthMoments[Index];
+            if(M.x>0){Moments+=M*(W.x*W.y);Coverage+=W.x*W.y;}
+        }
+    }
+    if(ProbeVisibilityEnabled==2 && Coverage>1.e-6)
+    {
+        Moments/=Coverage;
+        float Distance=max(0,length(ProbeToSurface)-VisibilityBiasCm);
+        float Delta=max(0,Distance-Moments.x);
+        float Variance=max(Moments.y-Moments.x*Moments.x,1.e-4);
+        float Probability=Delta==0?1:Variance/(Variance+Delta*Delta);
+        // Unknown/sky texels must not manufacture occluders. Cubing the upper
+        // bound limits variance-shadow light bleeding; compare with plane mode.
+        return (1-Coverage)+Coverage*Probability*Probability*Probability;
     }
     return Visibility;
 }
 
-float3 SampleVolume(uint Volume, float3 Position, float3 SurfaceNormal, float Basis[9])
+float3 SampleVolume(uint Volume, float3 Position, float3 SurfaceNormal, float Basis[9], out float3 Support)
 {
+    Support=0;
     const int V = Volume * 5;
     const int Offset = int(ProbeVolumes[V].w);
     const int3 Counts = int3(ProbeVolumes[V + 2].xyz);
@@ -154,6 +246,7 @@ float3 SampleVolume(uint Volume, float3 Position, float3 SurfaceNormal, float Ba
         // Preserve the existing global interpolation exactly for coarse-only A/B.
         [unroll] for (int C = 0; C < 9; ++C)
             Irradiance += TrilinearCoefficient(GridPosition, C, Counts, Offset) * Basis[C];
+        Support=1;
     }
     else
     {
@@ -169,6 +262,7 @@ float3 SampleVolume(uint Volume, float3 Position, float3 SurfaceNormal, float Ba
             int3 Tap = int3(Corner & 3, (Corner >> 2) & 3, (Corner >> 4) & 3);
             float Weight = WX[Tap.x] * WY[Tap.y] * WZ[Tap.z];
             if (Weight <= 0.0) continue;
+            Support.x+=Weight;
             int3 Coordinate = int3(X[Tap.x], Y[Tap.y], Z[Tap.z]);
             int Probe = Offset + ProbeIndex(Coordinate, Counts) * 9;
             if (ProbeCoefficients[Probe].w < 0.0) continue;
@@ -177,8 +271,13 @@ float3 SampleVolume(uint Volume, float3 Position, float3 SurfaceNormal, float Ba
             // create periodic dark patches on broad flat receivers.
             // Curved-surface gate transitions are a known remaining limitation.
             float3 ProbePosition = ProbeVolumes[V].xyz + float3(Coordinate) * CellSize;
-            if (dot(ProbePosition - Position, SurfaceNormal) <= 0.0) continue;
+            float FrontDistance=dot(ProbePosition - Position, SurfaceNormal);
+            if (FrontDistance <= 0.0) continue;
+            float TransitionWidth=HemisphereTransition*min(CellSize.x,min(CellSize.y,CellSize.z));
+            if(TransitionWidth>0)Weight*=smoothstep(0,TransitionWidth,FrontDistance);
+            Support.y+=Weight;
             Weight*=ProbeVisibility(Volume,ProbeIndex(Coordinate,Counts),Position-ProbePosition);
+            Support.z+=Weight;
             if(Weight<=0.0)continue;
             [unroll] for (int C = 0; C < 9; ++C)
                 Irradiance += Weight * ProbeCoefficients[Probe + C].rgb * Basis[C];
@@ -233,7 +332,7 @@ void MainCS(uint3 DispatchThreadId : SV_DispatchThreadID)
         return;
     }
     const float Metallic = saturate(PackedMaterial.r);
-    const float3 DiffuseAlbedo = BaseColor * (1.0 - Metallic);
+    float3 DiffuseAlbedo = BaseColor * (1.0 - Metallic);
 
     float Basis[9];
     EvaluateSH3(WorldNormal, Basis);
@@ -250,7 +349,30 @@ void MainCS(uint3 DispatchThreadId : SV_DispatchThreadID)
         { Selected = Volume; BestCellVolume = CellVolume; BestPriority = Priority; }
     }
     if (Selected == 0xffffffff) return;
-    float3 Irradiance = SampleVolume(Selected, TranslatedWorldPosition, WorldNormal, Basis);
+    // Transport remains Lambertian. Reserve the receiver's GGX lobe energy
+    // using UE's analytic GGX energy fit. v3-v5 preserve legacy shading.
+    if(ProbeVisibilityVolumes[Selected].z>0)
+    {
+        float NoV=saturate(dot(WorldNormal,normalize(View.TranslatedWorldCameraOrigin-TranslatedWorldPosition)));
+        float3 F0=saturate(lerp(.08*PackedMaterial.g,BaseColor,Metallic));
+        // GGXEnergyLookup's analytic fallback from ShadingEnergyConservation.ush.
+        // It also works with the legacy blendable GBuffer, which has no energy LUT.
+        float R=max(saturate(PackedMaterial.b),1.e-4);
+        float E=max(1-saturate(pow(R,NoV/R)*((R*NoV+.0266916)/(.466495+NoV))),1.e-4);
+        float Ef=pow(1-NoV,5)*pow(2.36651*pow(NoV,4.7703*R)+.0387332,R);
+        float F90=saturate(50*max(F0.r,max(F0.g,F0.b)));
+        float3 SpecularEnergy=(1+F0*((1-E)/E))*(E*F0+Ef*(F90-F0));
+        DiffuseAlbedo*=saturate(1-Luminance(SpecularEnergy));
+    }
+    float3 Support;
+    float3 Irradiance = SampleVolume(Selected, TranslatedWorldPosition, WorldNormal, Basis, Support);
+    if(DebugMode!=0 && DebugMode!=4)
+    {
+        float Value=DebugMode==1?Support.z/max(Support.y,1.e-6):DebugMode==2?Support.z:Support.y/max(Support.x,1.e-6);
+        float3 Color=lerp(float3(1,0,0),float3(0,1,0),saturate(Value));
+        SceneColorOutput[PixelIndex]=float4(Color*(ShouldUsePreExposure!=0?View.PreExposure:1),1);
+        return;
+    }
     if (VolumeCount > 0)
     {
         float BlendDistance = ProbeVolumes[Selected * 5 + 3].w;
@@ -276,12 +398,18 @@ void MainCS(uint3 DispatchThreadId : SV_DispatchThreadID)
                     if (Priority > FallbackPriority || (Priority == FallbackPriority && CellVolume < FallbackCell))
                     { Fallback = Volume; FallbackPriority = Priority; FallbackCell = CellVolume; }
                 }
-                float3 Lower = Fallback == 0xffffffff ? 0.0 : SampleVolume(Fallback, TranslatedWorldPosition, WorldNormal, Basis);
+                float3 FallbackSupport;
+                float3 Lower = Fallback == 0xffffffff ? 0.0 : SampleVolume(Fallback, TranslatedWorldPosition, WorldNormal, Basis, FallbackSupport);
                 Irradiance = lerp(Lower, Irradiance, Weight);
             }
         }
     }
 
+    // A short-range visibility correction for detail below probe spacing.
+    // This is diffuse contact occlusion, not additional transported light.
+    const float Contact=ContactVisibility(TranslatedWorldPosition,WorldNormal,PixelIndex);
+    if(DebugMode==4){SceneColorOutput[PixelIndex]=float4(Contact.xxx*(ShouldUsePreExposure!=0?View.PreExposure:1),1);return;}
+    Irradiance*=Contact;
     const float PreExposure = ShouldUsePreExposure != 0 ? View.PreExposure : 1.0;
     const float3 IndirectRadiance = Irradiance * DiffuseAlbedo * (1.0 / PI) * IndirectIntensity * PreExposure;
     SceneColorOutput[PixelIndex] += float4(max(IndirectRadiance, 0.0), 0.0);

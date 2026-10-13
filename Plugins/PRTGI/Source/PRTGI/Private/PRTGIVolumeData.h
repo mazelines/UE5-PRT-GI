@@ -1,6 +1,16 @@
 #pragma once
 #include "CoreMinimal.h"
+#include "RenderGraphResources.h"
 struct FPRTGIProbeVisibility;
+namespace PRTGI { struct FMultiBounceData; }
+
+struct FPRTGIGPUCoefficients
+{
+    ~FPRTGIGPUCoefficients();
+    // Immutable publication. Initialized on the render thread before the
+    // release/acquire Ready flag makes it visible to the game thread.
+    TRefCountPtr<FRDGPooledBuffer> Buffer;
+};
 
 struct FPRTGITransportData
 {
@@ -24,5 +34,8 @@ struct FPRTGIRenderVolume
     int32 Priority = 0;
     bool bTrilinear = false;
     TSharedPtr<const FPRTGIProbeVisibility, ESPMode::ThreadSafe> Visibility;
+    TSharedPtr<const PRTGI::FMultiBounceData, ESPMode::ThreadSafe> Geometry;
+    TSharedPtr<const FPRTGIGPUCoefficients, ESPMode::ThreadSafe> GPUCoefficients;
+    bool bCPUReferenceReady=true;
     TArray<FVector4f> Coefficients;
 };

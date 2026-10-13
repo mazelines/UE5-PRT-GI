@@ -1,0 +1,14 @@
+#include "/Engine/Public/Platform.ush"
+StructuredBuffer<float4> SourceSH;
+RWStructuredBuffer<float4> DestinationSH;
+uint CoefficientCount;
+uint DestinationOffset;
+
+[numthreads(64,1,1)]
+void PublishCS(uint3 DT:SV_DispatchThreadID)
+{
+    if(DT.x>=CoefficientCount)return;
+    uint Index=DestinationOffset+DT.x;
+    // CPU owns probe validity, including the near-clip safety override.
+    DestinationSH[Index]=float4(SourceSH[DT.x].rgb,DestinationSH[Index].w);
+}

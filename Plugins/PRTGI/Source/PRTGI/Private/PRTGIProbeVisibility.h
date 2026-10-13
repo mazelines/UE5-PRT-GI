@@ -10,6 +10,7 @@ struct FPRTGIProbeVisibility
 {
     int32 Resolution = 0;
     TArray<FVector4f> Planes;
+    TArray<FVector2f> DepthMoments; // distance and squared distance; zero = unknown/sky
     static TSharedPtr<const FPRTGIProbeVisibility, ESPMode::ThreadSafe> Build(const PRTGI::FSurfelVolume& Base);
     // Capture near planes enclose a cube, not a sphere. Derive at load time;
     // never change persisted transport/validity or depend on the current light.

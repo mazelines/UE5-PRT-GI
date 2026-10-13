@@ -21,6 +21,7 @@ public:
     void Reset();
     bool IsBaking() const;
     FString ValidateMultiBounce();
+    FString DumpQualityReport() const;
     const TArray<FPRTGIRenderVolume>& GetRenderVolumes() const { return RenderVolumes; }
     int32 GetReadyCount() const { return RenderVolumes.Num(); }
 

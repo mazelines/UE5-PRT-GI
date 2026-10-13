@@ -1,0 +1,608 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-14",
+  "engine": "UE6, Development Editor, Win64 D3D12",
+  "map": "/PRTGI/Maps/PRTGI_Showcase",
+  "camera": {
+    "location": [
+      -527.0682158657809,
+      225.8644764723343,
+      443.5580712753485
+    ],
+    "rotation": [
+      -6.714857921004295,
+      13.756817951798439,
+      -4.321140352203656e-07
+    ]
+  },
+  "reference": {
+    "file": "reference-pt512-diffuse-component_PreTonemapHDRColor.exr",
+    "width": 2048,
+    "height": 692,
+    "buffer": "PreTonemapHDRColor",
+    "samples": 512,
+    "bounces": 4,
+    "pre_exposure": 1,
+    "sun_lux": 100000,
+    "denoiser": false,
+    "emissive": false,
+    "max_path_intensity": 65504,
+    "direct_lighting_show_flag": false,
+    "specular_show_flag": true,
+    "post_process_include_indirect_specular": false,
+    "exposure_fitting": false,
+    "limitation": "Path tracing may retain mixed diffuse/specular paths; PRT transport is Lambertian. Fixed ROIs, one camera; not a whole-scene quality guarantee."
+  },
+  "roi_pixels": {
+    "classic": [
+      230,
+      150,
+      708,
+      570
+    ],
+    "color": [
+      1180,
+      155,
+      1695,
+      610
+    ],
+    "contact": [
+      1340,
+      515,
+      1580,
+      600
+    ]
+  },
+  "hdr_metrics": {
+    "baseline-v4": {
+      "classic": {
+        "pixels": 200760,
+        "rgb_rmse": 461.23196258547483,
+        "rgb_relative_rmse": 0.2324168050310986,
+        "rgb_mae": 324.2673771675043,
+        "reference_mean_luminance": 1361.7251195023896,
+        "candidate_mean_luminance": 1591.1987889635348,
+        "relative_luminance_bias": 0.16851688066457995
+      },
+      "color": {
+        "pixels": 234325,
+        "rgb_rmse": 658.7647981858827,
+        "rgb_relative_rmse": 0.32611542250411096,
+        "rgb_mae": 552.4478256142968,
+        "reference_mean_luminance": 1741.2675714678894,
+        "candidate_mean_luminance": 2326.070818939131,
+        "relative_luminance_bias": 0.3358491578512842
+      },
+      "contact": {
+        "pixels": 20400,
+        "rgb_rmse": 711.7281246390642,
+        "rgb_relative_rmse": 0.2484250277643323,
+        "rgb_mae": 546.2400763378268,
+        "reference_mean_luminance": 1879.2307420010723,
+        "candidate_mean_luminance": 2400.962446117647,
+        "relative_luminance_bias": 0.2776304646660985
+      }
+    },
+    "final-plane": {
+      "classic": {
+        "pixels": 200760,
+        "rgb_rmse": 362.0291442876953,
+        "rgb_relative_rmse": 0.18242807062161423,
+        "rgb_mae": 219.9456946736433,
+        "reference_mean_luminance": 1361.7251195023896,
+        "candidate_mean_luminance": 1384.849076148083,
+        "relative_luminance_bias": 0.016981368937472083
+      },
+      "color": {
+        "pixels": 234325,
+        "rgb_rmse": 351.0519206994788,
+        "rgb_relative_rmse": 0.1737850075703143,
+        "rgb_mae": 245.77655562634396,
+        "reference_mean_luminance": 1741.2675714678894,
+        "candidate_mean_luminance": 1842.9627348521328,
+        "relative_luminance_bias": 0.058402950270597415
+      },
+      "contact": {
+        "pixels": 20400,
+        "rgb_rmse": 422.9360700217491,
+        "rgb_relative_rmse": 0.14762365192604027,
+        "rgb_mae": 283.170002808415,
+        "reference_mean_luminance": 1879.2307420010723,
+        "candidate_mean_luminance": 1946.1439839215686,
+        "relative_luminance_bias": 0.035606719507602726
+      }
+    },
+    "final-contact8": {
+      "classic": {
+        "pixels": 200760,
+        "rgb_rmse": 357.52270903081256,
+        "rgb_relative_rmse": 0.18015725816834657,
+        "rgb_mae": 220.41273159545486,
+        "reference_mean_luminance": 1361.7251195023896,
+        "candidate_mean_luminance": 1362.1949059531205,
+        "relative_luminance_bias": 0.0003449935996646642
+      },
+      "color": {
+        "pixels": 234325,
+        "rgb_rmse": 337.27494392548573,
+        "rgb_relative_rmse": 0.16696484259815328,
+        "rgb_mae": 238.714702460372,
+        "reference_mean_luminance": 1741.2675714678894,
+        "candidate_mean_luminance": 1813.1397693967585,
+        "relative_luminance_bias": 0.04127579190387185
+      },
+      "contact": {
+        "pixels": 20400,
+        "rgb_rmse": 321.94606970402407,
+        "rgb_relative_rmse": 0.11237361365394898,
+        "rgb_mae": 218.80637535743463,
+        "reference_mean_luminance": 1879.2307420010723,
+        "candidate_mean_luminance": 1874.0523446764705,
+        "relative_luminance_bias": -0.0027555941954672198
+      }
+    }
+  },
+  "settings": {
+    "ProbeVisibility": 1,
+    "VisibilityBiasCm": 1,
+    "HemisphereTransition": 0,
+    "ContactSamples_plugin_default": 0,
+    "ContactSamples_host_project": 8,
+    "ContactRadiusCm": 20,
+    "GPUResident": 1,
+    "GPUReadback": 0
+  },
+  "cache_mib": {
+    "before": 1651.0654487609863,
+    "after": 2156.961452484131
+  },
+  "caches": [
+    {
+      "path": "Plugins/PRTGI/Content/Precomputed/Volumes/_PRTGI_Maps_PRTGI_Showcase/550B18EE4E3A06E6BB7335ACE71E3CA5.prtgi.surfels.multi",
+      "cache_version": 6,
+      "geometry_signature": "18417727803575568080",
+      "base_crc": 927912300,
+      "cell_size_cm": 2.0,
+      "probes": 2240,
+      "sources": 2244830,
+      "triangles": 11400,
+      "terms": 9889604,
+      "paths": [
+        3098958,
+        2755415,
+        2373976,
+        2003054
+      ],
+      "surface_hits": 7132445,
+      "unmapped_hits": 0,
+      "unmapped_hit_fraction": 0.0,
+      "bound_samples": 3091373,
+      "unbound_samples": 7585,
+      "unmapped_by_bounce": [
+        0,
+        0,
+        0
+      ],
+      "material_hits": 7132445,
+      "corrected_samples": 1598180,
+      "max_capture_correction_cm": 10.733784675598145,
+      "fp16_relative_error": 0.000202993224674675,
+      "build_seconds": 29.931413300335407,
+      "cache_mib": 741.2996444702148
+    },
+    {
+      "path": "Plugins/PRTGI/Content/Precomputed/Volumes/_PRTGI_Maps_PRTGI_Showcase/8F9EA5FF44BAAA1052B20880F2A0E82A.prtgi.surfels.multi",
+      "cache_version": 6,
+      "geometry_signature": "4693824622552513482",
+      "base_crc": 3408247116,
+      "cell_size_cm": 2.0,
+      "probes": 918,
+      "sources": 1296379,
+      "triangles": 11400,
+      "terms": 2899148,
+      "paths": [
+        1144796,
+        835421,
+        618604,
+        459847
+      ],
+      "surface_hits": 1913872,
+      "unmapped_hits": 0,
+      "unmapped_hit_fraction": 0.0,
+      "bound_samples": 1138098,
+      "unbound_samples": 6698,
+      "unmapped_by_bounce": [
+        0,
+        0,
+        0
+      ],
+      "material_hits": 1913872,
+      "corrected_samples": 1107827,
+      "max_capture_correction_cm": 6.594879150390625,
+      "fp16_relative_error": 0.0002019742429712315,
+      "build_seconds": 9.027954898774624,
+      "cache_mib": 256.7320861816406
+    },
+    {
+      "path": "Plugins/PRTGI/Content/Precomputed/Volumes/_PRTGI_Maps_PRTGI_Showcase/A91F677D4BB920C3D18FBCB8BDD7603D.prtgi.surfels.multi",
+      "cache_version": 6,
+      "geometry_signature": "5805470140243367424",
+      "base_crc": 4168509544,
+      "cell_size_cm": 2.0,
+      "probes": 512,
+      "sources": 576765,
+      "triangles": 11400,
+      "terms": 2222327,
+      "paths": [
+        701399,
+        643428,
+        555903,
+        473238
+      ],
+      "surface_hits": 1672569,
+      "unmapped_hits": 0,
+      "unmapped_hit_fraction": 0.0,
+      "bound_samples": 699606,
+      "unbound_samples": 1793,
+      "unmapped_by_bounce": [
+        0,
+        0,
+        0
+      ],
+      "material_hits": 1672569,
+      "corrected_samples": 657872,
+      "max_capture_correction_cm": 4.6192708015441895,
+      "fp16_relative_error": 0.00020230802025959907,
+      "build_seconds": 6.497810501605272,
+      "cache_mib": 171.49581146240234
+    },
+    {
+      "path": "Plugins/PRTGI/Content/Precomputed/Volumes/_PRTGI_Maps_PRTGI_Showcase/BA47FD6B404B8D4245D9B1B8D1A10406.prtgi.surfels.multi",
+      "cache_version": 6,
+      "geometry_signature": "5080625950827950627",
+      "base_crc": 3252755314,
+      "cell_size_cm": 2.0,
+      "probes": 1152,
+      "sources": 1882087,
+      "triangles": 11400,
+      "terms": 4453686,
+      "paths": [
+        1503621,
+        1236069,
+        1011868,
+        830323
+      ],
+      "surface_hits": 3078260,
+      "unmapped_hits": 0,
+      "unmapped_hit_fraction": 0.0,
+      "bound_samples": 1497656,
+      "unbound_samples": 5965,
+      "unmapped_by_bounce": [
+        0,
+        0,
+        0
+      ],
+      "material_hits": 3078260,
+      "corrected_samples": 1417838,
+      "max_capture_correction_cm": 7.473330974578857,
+      "fp16_relative_error": 0.0002091664180290924,
+      "build_seconds": 14.642230499535799,
+      "cache_mib": 387.3650131225586
+    },
+    {
+      "path": "Plugins/PRTGI/Content/Precomputed/Volumes/_PRTGI_Maps_PRTGI_Showcase/F889260B43904DBA5B4587B3C19D4B68.prtgi.surfels.multi",
+      "cache_version": 6,
+      "geometry_signature": "4797831845093049248",
+      "base_crc": 1388598457,
+      "cell_size_cm": 2.0,
+      "probes": 1152,
+      "sources": 1889113,
+      "triangles": 11400,
+      "terms": 4423325,
+      "paths": [
+        1507241,
+        1240884,
+        1002716,
+        802975
+      ],
+      "surface_hits": 3046575,
+      "unmapped_hits": 0,
+      "unmapped_hit_fraction": 0.0,
+      "bound_samples": 1502020,
+      "unbound_samples": 5221,
+      "unmapped_by_bounce": [
+        0,
+        0,
+        0
+      ],
+      "material_hits": 3046575,
+      "corrected_samples": 1395349,
+      "max_capture_correction_cm": 7.483211517333984,
+      "fp16_relative_error": 0.0002068421986437817,
+      "build_seconds": 13.805967900902033,
+      "cache_mib": 385.94075775146484
+    },
+    {
+      "path": "Plugins/PRTGI/Content/Precomputed/Volumes/_PRTGI_Maps_PRTGI_Showcase/F8F315724AC8A1C64315C19508677403.prtgi.surfels.multi",
+      "cache_version": 6,
+      "geometry_signature": "16237759735645890328",
+      "base_crc": 1448222714,
+      "cell_size_cm": 2.0,
+      "probes": 715,
+      "sources": 1605910,
+      "triangles": 11400,
+      "terms": 1891632,
+      "paths": [
+        804650,
+        542994,
+        370174,
+        257513
+      ],
+      "surface_hits": 1170681,
+      "unmapped_hits": 0,
+      "unmapped_hit_fraction": 0.0,
+      "bound_samples": 800665,
+      "unbound_samples": 3985,
+      "unmapped_by_bounce": [
+        0,
+        0,
+        0
+      ],
+      "material_hits": 1170681,
+      "corrected_samples": 775472,
+      "max_capture_correction_cm": 4.816300392150879,
+      "fp16_relative_error": 0.00020708669218422862,
+      "build_seconds": 5.076373901218176,
+      "cache_mib": 214.1281394958496
+    }
+  ],
+  "gpu_cpu": [
+    {
+      "actor": "PRTProbeVolume_3",
+      "effective_bounces": 4,
+      "gpu_cpu_relative_error": 5.83475957e-07,
+      "cluster_one_bounce_relative_error": 0.007295772,
+      "monotonic_l0": true,
+      "l0_energy": [
+        55921340,
+        90637309.1,
+        104947389,
+        110662466
+      ],
+      "sources": 2244830,
+      "terms": 9889604,
+      "unmapped_hits": 0,
+      "surface_hits": 7132445,
+      "build_seconds": 29.931413,
+      "clustering_only_relative_error": 0.00320817678,
+      "bvh_vs_collision_relative_error": 0.00674578338,
+      "fp16_weight_relative_error": 0.000202993225,
+      "transport_mb": 603.614
+    },
+    {
+      "actor": "PRTProbeVolume_4",
+      "effective_bounces": 4,
+      "gpu_cpu_relative_error": 1.14838411e-06,
+      "cluster_one_bounce_relative_error": 0.00554983628,
+      "monotonic_l0": true,
+      "l0_energy": [
+        182689646,
+        253448384,
+        287130302,
+        303346242
+      ],
+      "sources": 1296379,
+      "terms": 2899148,
+      "unmapped_hits": 0,
+      "surface_hits": 1913872,
+      "build_seconds": 9.027955,
+      "clustering_only_relative_error": 0.00561348845,
+      "bvh_vs_collision_relative_error": 0.000987624662,
+      "fp16_weight_relative_error": 0.000201974243,
+      "transport_mb": 176.95
+    },
+    {
+      "actor": "PRTProbeVolume_1",
+      "effective_bounces": 4,
+      "gpu_cpu_relative_error": 5.47185198e-07,
+      "cluster_one_bounce_relative_error": 0.0107957079,
+      "monotonic_l0": true,
+      "l0_energy": [
+        19507655.8,
+        31345771,
+        36310556.1,
+        38690996.1
+      ],
+      "sources": 576765,
+      "terms": 2222327,
+      "unmapped_hits": 0,
+      "surface_hits": 1672569,
+      "build_seconds": 6.497811,
+      "clustering_only_relative_error": 0.0100932344,
+      "bvh_vs_collision_relative_error": 0.00426864095,
+      "fp16_weight_relative_error": 0.00020230802,
+      "transport_mb": 135.64
+    },
+    {
+      "actor": "PRTProbeVolume_2",
+      "effective_bounces": 4,
+      "gpu_cpu_relative_error": 9.82026296e-07,
+      "cluster_one_bounce_relative_error": 0.00776294775,
+      "monotonic_l0": true,
+      "l0_energy": [
+        126627960,
+        169227252,
+        185915365,
+        192491620
+      ],
+      "sources": 1882087,
+      "terms": 4453686,
+      "unmapped_hits": 0,
+      "surface_hits": 3078260,
+      "build_seconds": 14.64223,
+      "clustering_only_relative_error": 0.00449984052,
+      "bvh_vs_collision_relative_error": 0.00650834654,
+      "fp16_weight_relative_error": 0.000209166418,
+      "transport_mb": 271.831
+    },
+    {
+      "actor": "PRTProbeVolume_5",
+      "effective_bounces": 4,
+      "gpu_cpu_relative_error": 3.74762391e-05,
+      "cluster_one_bounce_relative_error": 0.00897770204,
+      "monotonic_l0": true,
+      "l0_energy": [
+        89359593.6,
+        127112800,
+        147955442,
+        160453870
+      ],
+      "sources": 1889113,
+      "terms": 4423325,
+      "unmapped_hits": 0,
+      "surface_hits": 3046575,
+      "build_seconds": 13.805968,
+      "clustering_only_relative_error": 0.00651293938,
+      "bvh_vs_collision_relative_error": 0.006680316,
+      "fp16_weight_relative_error": 0.000206842199,
+      "transport_mb": 269.978
+    },
+    {
+      "actor": "PRTProbeVolume_0",
+      "effective_bounces": 4,
+      "gpu_cpu_relative_error": 7.48974584e-07,
+      "cluster_one_bounce_relative_error": 0.00217191996,
+      "monotonic_l0": true,
+      "l0_energy": [
+        82169866.5,
+        104124711,
+        112078826,
+        114923460
+      ],
+      "sources": 1605910,
+      "terms": 1891632,
+      "unmapped_hits": 0,
+      "surface_hits": 1170681,
+      "build_seconds": 5.076374,
+      "clustering_only_relative_error": 0.00150396035,
+      "bvh_vs_collision_relative_error": 0.0015673778,
+      "fp16_weight_relative_error": 0.000207086692,
+      "transport_mb": 115.456
+    }
+  ],
+  "gpu_residency_frame_comparison": {
+    "pixels": 1001040,
+    "rgb_rmse": 3.572863235683355,
+    "rgb_relative_rmse": 0.0015681952866183025,
+    "rgb_mae": 0.32080203255281176,
+    "reference_mean_luminance": 1584.1185434668944,
+    "candidate_mean_luminance": 1584.11855438454,
+    "relative_luminance_bias": 6.8919372818507405e-09,
+    "max_absolute_difference": 128.0
+  },
+  "gpu_residency_comparison_note": "AA disabled for both paths; 1720x582 internal buffer. Relative image RMSE 0.157%, repeated readback-path captures 0.052%; capture noise is not a coefficient error bound. GPU/CPU coefficient errors are reported separately.",
+  "gpu_profile": {
+    "gpu": "NVIDIA GeForce RTX 4090",
+    "input_resolution": [
+      1740,
+      590
+    ],
+    "output_resolution": [
+      2164,
+      733
+    ],
+    "anti_aliasing": "TSR, sg.AntiAliasingQuality=3",
+    "lighting": "full lit, static sun, caches already resident; excludes bake/relight upload",
+    "samples": {
+      "0": [
+        {
+          "apply_ms": [
+            0.499
+          ],
+          "frame_ms": [
+            2.98
+          ]
+        },
+        {
+          "apply_ms": [
+            0.501
+          ],
+          "frame_ms": [
+            2.98
+          ]
+        },
+        {
+          "apply_ms": [
+            0.499
+          ],
+          "frame_ms": [
+            2.99
+          ]
+        }
+      ],
+      "8": [
+        {
+          "apply_ms": [
+            2.725
+          ],
+          "frame_ms": [
+            5.21
+          ]
+        },
+        {
+          "apply_ms": [
+            2.739
+          ],
+          "frame_ms": [
+            5.25
+          ]
+        },
+        {
+          "apply_ms": [
+            2.712
+          ],
+          "frame_ms": [
+            5.19
+          ]
+        }
+      ]
+    },
+    "apply_median_ms": {
+      "0": 0.499,
+      "8": 2.725
+    },
+    "limitation": "Three single-frame ProfileGPU samples per setting, one machine; not a production benchmark."
+  },
+  "automation_passed": [
+    "PRTGI.MultiBounce.AnalyticTwoPlanes",
+    "PRTGI.MultiBounce.MaterialChartIsolation",
+    "PRTGI.MultiBounce.SurfaceBindingAndThinOccluder",
+    "PRTGI.Visibility.CapturedPlaneMapping",
+    "PRTGI.Visibility.NearClipSafety"
+  ],
+  "capture_warnings": {
+    "PRTProbeVolume_3": "77/2212 audited probes excluded; 105 invalid including near-clip safety",
+    "PRTProbeVolume_4": "21/878 audited probes excluded; 61 invalid including near-clip safety"
+  },
+  "limitations": [
+    "Static opaque diffuse transport; no dynamic geometry, glossy transport, skylight or emissive transport.",
+    "Receiver energy is an analytic single-GGX approximation, not complete layered Substrate shading.",
+    "Per-triangle material charts are 16x16; fine textures and complex vertex/world-dependent materials need separate validation.",
+    "Low-order SH and probe interpolation still limit curved-surface detail.",
+    "Contact occlusion is an approximation, with sampling noise and added GPU cost."
+  ],
+  "restart_verification": {
+    "all_six_caches_loaded": true,
+    "all_six_volumes_active": true,
+    "effective_bounces": 4,
+    "gpu_resident": true,
+    "cpu_readback": false,
+    "dynamic_gi_method": 2,
+    "contact_samples": 8,
+    "indirect_only": false,
+    "debug": 0,
+    "pre_exposure_override": 0,
+    "editor_background_throttle_restored": true,
+    "temporary_reference_actors_removed": true
+  }
+}

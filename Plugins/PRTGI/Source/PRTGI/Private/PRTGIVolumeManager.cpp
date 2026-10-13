@@ -18,6 +18,8 @@ DEFINE_LOG_CATEGORY_STATIC(LogPRTVolume, Log, All);
 static TAutoConsoleVariable<int32> CVarPRTBounces(TEXT("r.PRTGI.Bounces"),4,TEXT("Indirect bounces 1..4 (default 4); requires a built multi-bounce companion cache."),ECVF_Default);
 static TAutoConsoleVariable<int32> CVarPRTMultiGPU(TEXT("r.PRTGI.MultiBounceGPU"),1,TEXT("Use precomputed path transport and GPU lighting. 0: legacy CPU one-bounce reference."),ECVF_Default);
 static TAutoConsoleVariable<int32> CVarPRTNearClipSafety(TEXT("r.PRTGI.ProbeNearClipSafety"),1,TEXT("Reject probes whose capture near-clip cube intersects cached geometry. 0: diagnostic comparison."),ECVF_Default);
+static TAutoConsoleVariable<int32> CVarPRTGPUReadback(TEXT("r.PRTGI.GPUReadback"),0,TEXT("Read GPU coefficients back for numeric diagnostics. Normal rendering keeps coefficients on GPU; showing probes also enables readback."),ECVF_Default);
+static TAutoConsoleVariable<int32> CVarPRTGPUResident(TEXT("r.PRTGI.GPUResident"),1,TEXT("Keep relit coefficients on GPU. 0 restores the readback/upload path for A/B validation."),ECVF_Default);
 
 struct FPRTGIVolumeManager::FState
 {
@@ -50,8 +52,26 @@ FPRTGIVolumeManager::FPRTGIVolumeManager(FSignature InSignature, FReadMatrix InR
     : Signature(MoveTemp(InSignature)), ReadMatrix(MoveTemp(InReadMatrix)) {}
 FPRTGIVolumeManager::~FPRTGIVolumeManager() { Reset(); }
 
+FString FPRTGIVolumeManager::DumpQualityReport() const
+{
+    FString Report=TEXT("{\"volumes\":[");bool First=true;
+    for(const auto& S:States)if(S->Actor.IsValid() && S->Multi)
+    {
+        if(!First)Report+=TEXT(",");First=false;
+        Report+=FString::Printf(TEXT("{\"volume_id\":\"%s\",\"effective_bounces\":%d,\"active\":%s,\"gpu_resident\":%s,\"cpu_reference_ready\":%s,\"transport\":%s}"),
+            *S->Actor->VolumeId.ToString(),S->PublishedBounces,S->Actor->bGIActive?TEXT("true"):TEXT("false"),
+            S->Render.GPUCoefficients?TEXT("true"):TEXT("false"),S->Render.bCPUReferenceReady?TEXT("true"):TEXT("false"),*S->Multi->QualityReport());
+    }
+    Report+=TEXT("]}");
+    const FString Path=FPaths::ProjectSavedDir()/TEXT("PRTGIQuality.json");
+    if(!FFileHelper::SaveStringToFile(Report,*Path))return TEXT("Could not write Saved/PRTGIQuality.json");
+    return Report;
+}
+
 FString FPRTGIVolumeManager::ValidateMultiBounce()
 {
+    for(const auto& S:States)if(S->Multi && S->Actor.IsValid() && S->Actor->bEnabled && !S->Render.bCPUReferenceReady)
+        return TEXT("Set r.PRTGI.GPUReadback 1, wait for relighting, then validate. Current coefficients reside on GPU.");
     FString Report=TEXT("{\"volumes\":[");bool First=true;
     auto* World=ActiveWorld.Get();ADirectionalLight* Light=nullptr;
     if(World)for(TActorIterator<ADirectionalLight> It(World);It;++It){Light=*It;break;}
@@ -147,8 +167,10 @@ bool FPRTGIVolumeManager::Tick(UWorld* World, ADirectionalLight* Light, int32 Sh
     const float Bias = FMath::Clamp(GetDefault<UPRTGISettings>()->SurfelShadowBiasCm, .001f, 1.f);
     const int32 RequestedBounces=FMath::Clamp(CVarPRTBounces.GetValueOnGameThread(),1,4);
     const bool UseGPU=CVarPRTMultiGPU.GetValueOnGameThread()!=0;
-    const FString LightKey = FString::Printf(TEXT("%.9g %.9g %.9g %.9g %.9g %.9g %.9g %d %.9g %d %d"),
-        TowardSun.X,TowardSun.Y,TowardSun.Z,Color.X,Color.Y,Color.Z,Lux,LC?int32(LC->CastShadows):0,Bias,RequestedBounces,int(UseGPU));
+    const bool Resident=CVarPRTGPUResident.GetValueOnGameThread()!=0;
+    const bool Readback=!Resident || CVarPRTGPUReadback.GetValueOnGameThread()!=0 || ShowProbes!=0;
+    const FString LightKey = FString::Printf(TEXT("%.9g %.9g %.9g %.9g %.9g %.9g %.9g %d %.9g %d %d %d %d"),
+        TowardSun.X,TowardSun.Y,TowardSun.Z,Color.X,Color.Y,Color.Z,Lux,LC?int32(LC->CastShadows):0,Bias,RequestedBounces,int(UseGPU),int(Readback),int(Resident));
 
     for (APRTProbeVolume* Actor : Actors)
     {
@@ -273,13 +295,18 @@ bool FPRTGIVolumeManager::Tick(UWorld* World, ADirectionalLight* Light, int32 Sh
             }
         }
         Actor->TransportSources=S.Multi?S.Multi->Surfaces.Num()/3:0;
+        S.Render.Geometry=S.Multi;
         if(S.GPU && S.GPU->IsPending())
         {
             TArray<FVector4f> Completed;
             // Publish the completed generation even while the sun keeps moving. Requiring
             // equality with this frame's light would starve every continuously animated light.
-            if(S.GPU->Poll(Completed) && bPRTActive && UseGPU && S.Multi)
+            TSharedPtr<const FPRTGIGPUCoefficients,ESPMode::ThreadSafe> GPUOutput;
+            if(S.GPU->Poll(Completed,GPUOutput) && bPRTActive && UseGPU && S.Multi)
             {
+                S.Render.bCPUReferenceReady=!Completed.IsEmpty();
+                if(Completed.IsEmpty())Completed.SetNumZeroed(S.Multi->ProbeCount*9);
+                S.Render.GPUCoefficients=Resident?GPUOutput:nullptr;
                 S.Render.Coefficients=MoveTemp(Completed);S.Validity=S.Multi->Validity;S.LastLight=S.PendingLight;
                 S.PublishedBounces=S.PendingBounces;bDirty=true;S.bVisualDirty=true;
                 if(!S.MultiJob)Actor->CacheStatus=FString::Printf(TEXT("Ready: GPU %d indirect bounces"),S.PublishedBounces);
@@ -296,9 +323,9 @@ bool FPRTGIVolumeManager::Tick(UWorld* World, ADirectionalLight* Light, int32 Sh
                 if(S.Multi && UseGPU)
                 {
                     if(!S.GPU)S.GPU=MakeUnique<PRTGI::FMultiBounceGPU>();
-                    if(!S.GPU->IsPending()){S.PendingLight=LightKey;S.PendingBounces=RequestedBounces;S.GPU->Submit(S.Multi,TowardSun,Color,Lux,LC->CastShadows,Bias,RequestedBounces);}
+                    if(!S.GPU->IsPending()){S.PendingLight=LightKey;S.PendingBounces=RequestedBounces;S.GPU->Submit(S.Multi,TowardSun,Color,Lux,LC->CastShadows,Bias,RequestedBounces,Readback);}
                 }
-                else {Success = S.Surfels->Relight(World,TowardSun,Color,Lux,LC->CastShadows,Bias,S.Render.Coefficients);
+                else {S.Render.GPUCoefficients.Reset();S.Render.bCPUReferenceReady=true;Success = S.Surfels->Relight(World,TowardSun,Color,Lux,LC->CastShadows,Bias,S.Render.Coefficients);
                     S.PublishedBounces=1;
                     if(!S.MultiJob)Actor->CacheStatus=RequestedBounces>1?TEXT("One bounce fallback: Build Precomputation for 2..4"):TEXT("Ready: CPU one bounce");}
                 S.Validity = S.Surfels->Validity;

@@ -149,3 +149,39 @@ PRTGI.Status
 ```
 
 `PRTGI.SetMode Offline`은 동적 GI를 종료하는 이전 명령 이름입니다. 오프라인 조명이나 Path Tracing 기준 이미지를 자동으로 생성하지는 않습니다.
+
+## Surfel 품질 진단
+
+새 v6 전송 캐시는 캡처 표면을 삼각형에 연결하고 기하 법선과 셰이딩 법선을 분리합니다. 2차 광선이 실제로 맞힌 삼각형의 재질을 원래 UV와 정점 색상을 유지한 차트에서 조회합니다. 베이크에는 기본색, 금속성, 접선 공간 법선을 사용하며 전송 계산은 Lambert 확산 모델을 유지합니다. 최종 수신 표면은 GBuffer의 반사율·거칠기와 UE의 해석적 GGX 에너지 근사·다중 산란 보정으로 반사 로브의 에너지를 제외합니다. 이 수신 표면 보정은 단일 GGX 재질의 근사이며, Substrate의 모든 레이어·광택 반사 전송·동적 차폐물·하늘광·발광 전송을 구현한 것은 아닙니다. v3~v5 캐시는 계속 읽고 같은 버전으로 저장할 수 있습니다. v6를 일관되게 적용하려면 참여하는 볼륨을 모두 다시 계산하세요.
+
+재질 베이커는 차트 내부의 모든 텍셀이 렌더링됐는지 검사합니다. 프리미티브 변환 때문에 차트가 잘리면 정점·월드 데이터에 의존하지 않는다고 확인된 재질만 프리미티브 데이터 없이 재시도합니다. 그 외 실패는 베이크를 중단하고 이전 캐시를 보존합니다. 삼각형마다 16×16 차트를 사용하므로 매우 세밀한 텍스처까지 그대로 보존하지는 않습니다.
+
+`PRTGI.DumpQuality`는 캐시 버전, 실제 재질 조회 수, 반사 단계별 연결 실패 수, GPU 상주 상태를 `Saved/PRTGIQuality.json`에 기록합니다. 연결 실패율은 손실된 에너지의 비율이 아닙니다. 수치 검증은 `r.PRTGI.GPUReadback 1`을 설정하고 재조명이 끝난 뒤 `PRTGI.ValidateMultiBounce`를 실행하세요. 결과는 `Saved/PRTMultiBounceValidation.json`에 저장되며 에디터가 잠시 멈출 수 있습니다. 검증 후 `GPUReadback 0`으로 복원하세요. 일반 렌더링은 계수를 GPU에 보관하며, CPU 읽기는 진단과 프로브 시각화에 사용합니다.
+
+```text
+python Plugins/PRTGI/Tools/quality_report.py --output Saved/PRTGIQuality/caches.json Plugins/PRTGI/Content/Precomputed/Volumes
+python -m pip install numpy OpenEXR
+python Plugins/PRTGI/Tools/compare_hdr.py reference.exr candidate.exr --roi 230 150 708 570
+```
+
+HDR 비교 도구는 노출을 임의로 맞추지 않고 정렬된 선형 RGB 영상을 비교합니다. `PreTonemapHDRColor`와 동일한 카메라·해상도·광원·반사 횟수를 사용하세요. 확산 간접광만 비교할 때는 DirectLighting 표시 플래그를 끄고, Specular 표시 플래그를 켠 상태에서 임시 포스트 프로세스 볼륨으로 간접 정반사 기여를 제외합니다. 그래도 기준 영상에는 확산·정반사가 섞인 경로가 남을 수 있으므로 Lambert PRT와 완전히 같은 모델의 정답 영상은 아닙니다. 이 테스트에서는 발광과 디노이저를 끄고, 경로 밝기 제한이 기준 영상을 잘라내지 않는지도 확인해야 합니다. Showcase 기준 영상은 512 샘플, 4회 반사, 사전 노출 1, `r.PathTracing.MaxPathIntensity 65504`로 촬영했습니다.
+
+| 콘솔 변수 | 기본값 | 의미 |
+|---|---:|---|
+| `r.PRTGI.GPUResident` | 1 | 재조명 계수를 GPU에 보관. 0은 읽기·재업로드 경로 |
+| `r.PRTGI.GPUReadback` | 0 | 수치 진단을 위해 CPU에도 계수 보관 |
+| `r.PRTGI.ProbeVisibility` | 1 | 0 끔, 1 최초 교차 평면, 2 실험적 깊이 모멘트, 3 정적 BVH 선분 검사 |
+| `r.PRTGI.VisibilityBiasCm` | 1 | 수신 표면 가시성 바이어스(cm) |
+| `r.PRTGI.HemisphereTransition` | 0 | 프로브 간격 대비 양의 반구 전환 폭 |
+| `r.PRTGI.ContactSamples` | 0 | 선택적 정적 접촉 차폐: 픽셀당 0~16개 광선 |
+| `r.PRTGI.ContactRadiusCm` | 20 | 접촉 광선 최대 거리 |
+| `r.PRTGI.ContactBiasCm` | 0.1 | 접촉 광선 시작점·교차 바이어스 |
+| `r.PRTGI.Debug` | 0 | 1 가시성, 2 보간 지지율, 3 반구 수용률, 4 접촉 가시성 |
+
+접촉 차폐는 짧은 거리의 확산광 근사입니다. GPU 비용과 표본 노이즈가 추가되며 전송된 복사휘도를 대신하지 않습니다. 깊이 모멘트는 캡처의 네 이웃 표본을 보간하는 실험으로, Showcase에서 벽의 얼룩이 증가했습니다. 정확한 BVH 가시성도 선택 기능으로 유지합니다. 진단 후 `IndirectOnly 0`, `Debug 0`, `ProbeVisibility 1`, `HemisphereTransition 0`으로 복원하세요.
+
+기하·셰이딩 법선 분리와 재구성은 [EA GIBS SIGGRAPH 2024 발표](https://www.advances.realtimerendering.com/s2024/content/EA-GIBS2/Apers_Advances-s2024_Shipping-Dynamic-GI.pdf)를 참고했습니다. [SurfelPlus SIGGRAPH 2025 포스터](https://github.com/WANG-Ruipeng/SurfelPlus/blob/master/docs/files/Poster.pdf)와 [DDGI](https://arxiv.org/abs/2009.10796)도 비교 자료로 사용하며, 이 플러그인이 해당 시스템 전체를 구현한 것은 아닙니다.
+
+UE6 Showcase 검증에서 v6 캐시 여섯 개의 2차 표면 조회 누락은 모두 0이었습니다. 기존 누락률은 0.68~9.26%였습니다. 고정 카메라의 확산 성분 HDR 기준 영상과 비교한 RGB 상대 RMSE는 ClassicBox / ColorBox / 접촉부에서 **23.24% / 32.61% / 24.84% → 18.02% / 16.70% / 11.24%**로 줄었습니다(접촉 표본 8개). 특정 영역의 비교 결과이며 장면 전체가 기준 렌더러와 같다는 뜻은 아닙니다. GPU·CPU 계수 오차는 최대 `3.75e-5`이고, 관련 자동화 테스트 5개가 통과했습니다. MetalBox와 ShinyBox의 기존 캡처 감사 제외 항목은 유지됩니다.
+
+RTX 4090의 정적 프레임 3회 측정에서 PRT 적용 패스 중앙값은 접촉 보정 없이 **0.499 ms**, 표본 8개 사용 시 **2.725 ms**였습니다(입력 1740×590, TSR 출력 2164×733). 여섯 볼륨의 전송 파일 합계는 **1651 MiB → 2157 MiB**로 증가했습니다. 호스트 프로젝트의 품질 설정은 접촉 표본 8개를 사용하고 플러그인 기본값은 0을 유지합니다. GPU 비용을 줄이려면 `r.PRTGI.ContactSamples 0`을 설정하세요. 측정 조건, ROI 좌표, 캐시 통계, 남은 한계는 [validation_showcase.json](Plugins/PRTGI/Tools/validation_showcase.json)에 기록했습니다.
