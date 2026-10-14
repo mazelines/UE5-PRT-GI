@@ -8,6 +8,8 @@
 
 ![PRT GI Cornell Box showcase](Plugins/PRTGI/docs/images/prt-gi-showcase-ue6-cfcd80c5.png)
 
+![PRT GI UE6 编辑器演示](Plugins/PRTGI/docs/images/prt-gi-showcase-ue6-demo.gif)
+
 ## 相对 Fork 原版的实验性改进
 
 此 `ue6` 分支基于 [wuzhy66/UE5-PRT-GI](https://github.com/wuzhy66/UE5-PRT-GI)，在 UE6 中实验改进画质与运行路径。下表的基准是 Fork 时的[原版提交 `69e08cf`](https://github.com/wuzhy66/UE5-PRT-GI/tree/69e08cfcdc3bb5c5ca1e83169c81ec95f47a67a9)，不包含上游之后的变化。**Probe/Surfel 预计算、GPU 方向光重光照、1～4 次间接反弹、独立 Volume、采集审计与近裁剪保护均为原版已有功能。**

@@ -8,6 +8,8 @@
 
 ![PRT GI Cornell Box 예제](Plugins/PRTGI/docs/images/prt-gi-showcase-ue6-cfcd80c5.png)
 
+![PRT GI UE6 에디터 시연](Plugins/PRTGI/docs/images/prt-gi-showcase-ue6-demo.gif)
+
 ## 포크 원본 대비 실험적 개선
 
 이 브랜치는 [wuzhy66/UE5-PRT-GI](https://github.com/wuzhy66/UE5-PRT-GI)를 포크해 UE6 환경에서 품질과 실행 경로를 실험한 버전입니다. 아래 비교 기준은 포크 당시의 [원본 커밋 `69e08cf`](https://github.com/wuzhy66/UE5-PRT-GI/tree/69e08cfcdc3bb5c5ca1e83169c81ec95f47a67a9)이며, 이후 원본 저장소의 변경 사항을 포함하지 않습니다. **프로브·Surfel 기반 사전 계산, GPU 방향광 재조명, 1~4회 간접 반사, 독립 볼륨, 캡처 감사와 근접 클리핑 보호는 원본에서 제공한 기능입니다.**
