@@ -1,38 +1,41 @@
-# UE5-PRT-GI
+# PRTGI — Unreal Engine 6
 
 [English](README.md) | [한국어](README.ko.md) | **简体中文**
 
 [使用指南 · GitHub Wiki](https://github.com/mazelines/UE5-PRT-GI/wiki)
 
-UE 5.8 的静态场景 Probe GI 插件。包含 Cornell Box 示例、方向光实时重光照、1～12 次间接反弹、独立 Probe Volume 与可视化。
+`ue6` 分支提供面向 **Unreal Engine 6.0** 静态场景的 Probe GI 插件与宿主项目。包含 Cornell Box 示例、方向光实时重光照、1～12 次间接反弹、独立 Probe Volume 与可视化。
 
 ![PRT GI Cornell Box showcase](Plugins/PRTGI/docs/images/prt-gi-showcase.png)
 
 ## 安装
 
-预计算缓存（`.prtgi`、`.surfels`、`.surfels.multi`）在本地生成，不提交到 Git。首次克隆后，需要为所有参与的 Volume 执行 **Build Precomputation** 才能使用 PRT 光照。仓库现在包含宿主项目 `UE_PRT_GI.uproject`，插件位于 `Plugins/PRTGI`。`ue6` 分支的项目 Target 使用 `Unreal6_0`；下文的 UE 5.8 验证记录针对原始插件，不代表此宿主项目已通过验证。
+> **首次运行必须手动预计算。** Git 仓库不包含 `.prtgi`、`.surfels`、`.surfels.multi` 缓存。请用 UE6 Editor 打开项目，加载 `PRTGI_Showcase`，选择六个 `PRTProbeVolume`，执行 **Details → PRT → Build → Build Precomputation**。等待所有 Volume 完成后再比较 PRT 光照。**仅编译 C++ 项目或打开项目不会生成这些缓存。** 其他关卡也需要为所有参与的 Volume 在本地预计算。
 
-1. 使用随附宿主项目时，打开 `UE_PRT_GI.uproject`。安装到其他项目时，将本仓库的 `Plugins/PRTGI` 目录复制到 `YourProject/Plugins/PRTGI`，确保目录内直接包含 `PRTGI.uplugin`，不要额外嵌套一层仓库目录。
-2. 使用与宿主项目匹配的 UE 和 C++ 工具链编译 **Editor target**。Blueprint 项目也需要能够编译此 C++ 插件的环境，必要时先添加一个 C++ 类以生成项目 target。
-3. 在 **Edit → Plugins** 搜索 **UE5-PRT-GI** 并启用，按提示重启 Editor。
+仓库现在包含宿主项目 `UE_PRT_GI.uproject`，插件位于 `Plugins/PRTGI`。Game 和 Editor Target 均使用 `BuildSettingsVersion.V9` 与 `EngineIncludeOrderVersion.Unreal6_0`。此分支已在 UE6 Editor 中完成构建和验证；测量条件与结果见 [反弹验证报告](Plugins/PRTGI/Tools/validation_bounces.json)。
 
-当前按 **Windows、UE 5.8、DX12 / SM6** 的 Deferred Rendering 路径验证。GI pass 依赖 GBuffer，当前路径不支持 Forward Shading。插件引用 Renderer 内部接口，其他 UE 版本和平台需重新编译并验证；不同 Engine Build 的预编译 DLL 不保证兼容。当前实现不要求为安装插件另行修改 Engine 源码。
+1. 使用随附宿主项目时，先将 `UE_PRT_GI.uproject` 关联到本地 **UE 6.0** 安装，再打开项目。仓库中的引擎关联 ID 对应开发机，其他电脑需要重新关联。安装到其他项目时，将本仓库的 `Plugins/PRTGI` 目录复制到 `YourProject/Plugins/PRTGI`，确保目录内直接包含 `PRTGI.uplugin`，不要额外嵌套一层仓库目录。
+2. 使用 **UE 6.0** 编译 **UE_PRT_GIEditor**，配置为 **Win64 / Development Editor**。安装到其他项目时，使用 UE6 编译该项目的 Editor target。Blueprint 项目也需要能够编译此 C++ 插件的环境，必要时先添加一个 C++ 类以生成项目 target。
+3. 在 **Edit → Plugins** 搜索 **PRT**（当前显示名称为 **UE5-PRT-GI**）并启用，按提示重启 Editor。
+
+此分支按 **UE 6.0、Windows / Win64、Development Editor、DX12 / SM6** 的 Deferred Rendering 路径验证。GI pass 依赖 GBuffer，当前路径不支持 Forward Shading。插件引用 Renderer 内部接口，其他 UE 版本和平台需重新编译并验证；不同 Engine Build 的预编译 DLL 不保证兼容。当前实现不要求为安装插件另行修改 Engine 源码。
 
 ## 快速运行示例
 
 1. 在 Content Browser 勾选 **Show Plugin Content**。
 2. 打开 **PRTGI Content → Maps → PRTGI_Showcase**，资源路径 `/PRTGI/Maps/PRTGI_Showcase`。
-3. 点击 Editor 视口或 PIE 游戏画面，按 **Ctrl+Alt+2** 开启 PRT，按 **Ctrl+Alt+3** 比较 Lumen。
-4. 按 **Ctrl+Alt+4** 检查 PRT 仅间接光，按 **Ctrl+Alt+P** 查看 Probe。
-5. 按 **Ctrl+Alt+[ / ]** 旋转太阳，观察重光照结果。
+3. 选择六个 `PRTProbeVolume`，执行 **Build Precomputation**，并等待全部完成。
+4. 点击 Editor 视口或 PIE 游戏画面，按 **Ctrl+Alt+2** 开启 PRT，按 **Ctrl+Alt+3** 比较 Lumen。
+5. 按 **Ctrl+Alt+4** 检查 PRT 仅间接光，按 **Ctrl+Alt+P** 查看 Probe。
+6. 按 **Ctrl+Alt+[ / ]** 旋转太阳，观察重光照结果。
 
-本插件依赖当前 UE 5.8 Renderer 接口。Lumen 硬件光追比较要求项目启用 DX12 / SM6、Ray Tracing 和相关支持；这些属于宿主项目渲染设置，不由插件强制覆盖整个项目。
+此分支使用 UE6 Renderer 接口。Lumen 硬件光追比较要求项目启用 DX12 / SM6、Ray Tracing 和相关支持；这些属于宿主项目渲染设置，不由插件强制覆盖整个项目。
 
 比较 Hardware Ray Tracing Lumen 时，启用 **Support Hardware Ray Tracing**、**Support Compute Skin Cache** 和 **Use Hardware Ray Tracing when available**，并使用受支持的 GPU。修改需要重启的设置后重启 Editor。详见 Epic 的 [Lumen Technical Details](https://dev.epicgames.com/documentation/en-us/unreal-engine/lumen-technical-details-in-unreal-engine)。
 
 随附示例的默认 Map Profile 会临时设置 `r.Lumen.HardwareRayTracing=1`、`r.Lumen.ScreenProbeGather.ScreenTraces=0` 和 `r.EyeAdaptation.CachedLightingPreExposure=8`，离开地图后恢复原值。因此示例的 Lumen 比较关闭了 diffuse screen traces，并非 Lumen 默认配置。这些临时覆盖不能代替项目级硬件光追支持设置。
 
-独立验证使用的配置见 [showcase-renderer-settings.ini](Plugins/PRTGI/docs/showcase-renderer-settings.ini)，供宿主工程选择性合并，不会自动生效；不要用它覆盖整个项目配置。
+UE6 宿主配置见 [Config/DefaultEngine.ini](Config/DefaultEngine.ini)：Plugin GI 使用 `r.DynamicGlobalIlluminationMethod=2`，反射为 `r.ReflectionMethod=0`，启用 Substrate 并使用 `r.Substrate.ProjectGBufferFormat=0`。运行时可用 `PRTGI.SetMode PRT` 自动解析引擎 GI 枚举。默认反弹次数为 **6**，预计算缓存在本地生成。安装到其他 UE6 项目时，请合并相关设置。
 
 示例使用同一盏 UE DirectionalLight；各盒子的原面光源区域已替换为开口，正面保留观察开口。
 

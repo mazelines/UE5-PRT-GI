@@ -1,22 +1,22 @@
-# UE5-PRT-GI
+# PRTGI — Unreal Engine 6
 
 [English](README.md) | **한국어** | [简体中文](README.zh-CN.md)
 
 [사용자 가이드 · GitHub Wiki](https://github.com/mazelines/UE5-PRT-GI/wiki)
 
-정적 장면을 위한 프로브 기반 전역 조명(GI) 플러그인입니다. Cornell Box 예제, 방향광 변화에 따른 실시간 조명 갱신, 1~12회 간접광 반사, 독립적인 프로브 볼륨과 시각화 기능을 제공합니다.
+`ue6` 브랜치는 **Unreal Engine 6.0**의 정적 장면을 위한 프로브 기반 전역 조명(GI) 플러그인과 실행용 프로젝트를 제공합니다. Cornell Box 예제, 방향광 변화에 따른 실시간 조명 갱신, 1~12회 간접광 반사, 독립적인 프로브 볼륨과 시각화 기능을 제공합니다.
 
 ![PRT GI Cornell Box 예제](Plugins/PRTGI/docs/images/prt-gi-showcase.png)
 
 ## 설치
 
-이 저장소는 실행용 프로젝트 `UE_PRT_GI.uproject`와 `Plugins/PRTGI`에 있는 플러그인으로 구성됩니다. `ue6` 브랜치의 프로젝트 타깃은 `Unreal6_0`을 사용합니다. 기존 플러그인의 검증 환경은 **Windows, UE 5.8, DX12 / SM6, 디퍼드 렌더링**이며, 이 기록이 현재 실행용 프로젝트의 검증을 의미하지는 않습니다.
+이 저장소는 실행용 프로젝트 `UE_PRT_GI.uproject`와 `Plugins/PRTGI`에 있는 플러그인으로 구성됩니다. Game·Editor 타깃 모두 `BuildSettingsVersion.V9`와 `EngineIncludeOrderVersion.Unreal6_0`을 사용합니다. 이 브랜치는 **UE 6.0, Windows / Win64, Development Editor, DX12 / SM6, 디퍼드 렌더링** 환경에서 빌드와 에디터 검증을 마쳤습니다. 측정 조건과 결과는 [바운스 검증 보고서](Plugins/PRTGI/Tools/validation_bounces.json)에 있습니다.
 
-사전 계산 캐시(`.prtgi`, `.surfels`, `.surfels.multi`)는 로컬에서 생성하며 Git에 올리지 않습니다. 새로 복제한 프로젝트는 참여하는 볼륨마다 **Build Precomputation**을 실행해야 PRT 조명을 사용할 수 있습니다.
+> **첫 실행 시 직접 프리빌드해야 합니다.** 사전 계산 캐시(`.prtgi`, `.surfels`, `.surfels.multi`)는 Git 저장소에 포함하지 않습니다. 프로젝트를 UE6 에디터로 열고 `PRTGI_Showcase` 레벨에서 `PRTProbeVolume` 여섯 개를 선택한 뒤, **Details → PRT → Build → Build Precomputation**을 실행하세요. 모든 볼륨의 계산이 완료되어야 PRT 조명을 비교할 수 있습니다. **C++ 프로젝트를 빌드하거나 프로젝트를 여는 것만으로는 캐시가 생성되지 않습니다.** 다른 레벨에서도 참여하는 볼륨을 직접 사전 계산해야 합니다.
 
-1. 포함된 프로젝트를 사용하려면 `UE_PRT_GI.uproject`를 엽니다. 다른 프로젝트에 설치하려면 이 저장소의 `Plugins/PRTGI` 폴더를 `YourProject/Plugins/PRTGI`로 복사합니다. 해당 폴더 바로 아래에 `PRTGI.uplugin`이 있어야 합니다.
-2. 사용할 프로젝트의 UE 버전과 C++ 도구 체인에 맞춰 **Editor 타깃**을 빌드합니다. 블루프린트 프로젝트도 이 C++ 플러그인을 컴파일할 환경이 필요합니다. 필요한 경우 C++ 클래스를 추가해 프로젝트 타깃을 생성합니다.
-3. **Edit → Plugins**에서 **UE5-PRT-GI**를 검색해 활성화하고, 안내에 따라 에디터를 다시 시작합니다.
+1. 포함된 프로젝트를 사용하려면 `UE_PRT_GI.uproject`를 로컬에 설치한 **UE 6.0**에 연결한 뒤 엽니다. 저장소의 엔진 연결 ID는 개발 PC의 설치 경로에 대응하므로 다른 PC에서는 엔진 연결을 다시 지정하세요. 다른 프로젝트에 설치하려면 이 저장소의 `Plugins/PRTGI` 폴더를 `YourProject/Plugins/PRTGI`로 복사합니다. 해당 폴더 바로 아래에 `PRTGI.uplugin`이 있어야 합니다.
+2. **UE 6.0**에서 **UE_PRT_GIEditor** 타깃을 **Win64 / Development Editor**로 빌드합니다. 다른 프로젝트에 설치했다면 해당 프로젝트의 Editor 타깃을 UE6로 빌드합니다. 블루프린트 프로젝트도 이 C++ 플러그인을 컴파일할 환경이 필요합니다. 필요한 경우 C++ 클래스를 추가해 프로젝트 타깃을 생성합니다.
+3. **Edit → Plugins**에서 **PRT**를 검색해 활성화하고(현재 표시 이름은 **UE5-PRT-GI**), 안내에 따라 에디터를 다시 시작합니다.
 
 GI 패스는 GBuffer를 사용하므로 현재 방식은 Forward Shading을 지원하지 않습니다. 플러그인이 Renderer 내부 인터페이스를 참조하므로 다른 엔진 버전이나 플랫폼에서는 다시 컴파일하고 검증해야 합니다. 사전 컴파일된 DLL은 엔진 빌드 간 호환을 보장하지 않습니다. 기존 구현은 설치를 위한 별도의 엔진 소스 수정을 요구하지 않습니다.
 
@@ -29,13 +29,13 @@ GI 패스는 GBuffer를 사용하므로 현재 방식은 Forward Shading을 지�
 5. **Ctrl+Alt+4**로 PRT 간접광만 확인하고, **Ctrl+Alt+P**로 프로브를 표시합니다.
 6. **Ctrl+Alt+[ / ]**로 태양을 회전해 조명 변화를 확인합니다.
 
-기존 플러그인은 UE 5.8 Renderer 인터페이스를 기준으로 작성됐습니다. 하드웨어 레이 트레이싱 Lumen과 비교하려면 프로젝트에 DX12 / SM6, Ray Tracing 및 관련 지원 설정이 필요합니다. 플러그인은 프로젝트 렌더링 설정을 강제로 덮어쓰지 않습니다.
+이 브랜치는 UE6 Renderer 인터페이스를 사용합니다. 하드웨어 레이 트레이싱 Lumen과 비교하려면 프로젝트에 DX12 / SM6, Ray Tracing 및 관련 지원 설정이 필요합니다. 플러그인은 프로젝트 렌더링 설정을 강제로 덮어쓰지 않습니다.
 
 지원 GPU에서 **Support Hardware Ray Tracing**, **Support Compute Skin Cache**, **Use Hardware Ray Tracing when available**을 활성화하세요. 재시작이 필요한 설정을 변경했다면 에디터를 다시 시작합니다. 관련 설명은 Epic의 [Lumen Technical Details](https://dev.epicgames.com/documentation/en-us/unreal-engine/lumen-technical-details-in-unreal-engine)를 참고하세요.
 
 포함된 예제 맵의 기본 프로필은 일시적으로 `r.Lumen.HardwareRayTracing=1`, `r.Lumen.ScreenProbeGather.ScreenTraces=0`, `r.EyeAdaptation.CachedLightingPreExposure=8`을 적용하며, 맵을 벗어나면 이전 값으로 복원합니다. 따라서 예제의 Lumen 비교는 확산광 화면 추적을 끈 상태로 이루어집니다. 이 설정만으로 프로젝트에 없는 하드웨어 레이 트레이싱 지원이 활성화되지는 않습니다.
 
-독립 검증에 사용한 설정은 [showcase-renderer-settings.ini](Plugins/PRTGI/docs/showcase-renderer-settings.ini)에 있습니다. 필요한 항목만 프로젝트에 반영하세요. 이 파일은 자동으로 적용되지 않으며, 프로젝트 설정 전체를 이 파일로 덮어쓰면 안 됩니다.
+UE6 실행용 프로젝트 설정은 [Config/DefaultEngine.ini](Config/DefaultEngine.ini)에 있습니다. Plugin GI는 `r.DynamicGlobalIlluminationMethod=2`, 반사는 `r.ReflectionMethod=0`이며, Substrate를 켜고 `r.Substrate.ProjectGBufferFormat=0`을 사용합니다. 런타임에서는 엔진의 GI 열거형을 확인하는 `PRTGI.SetMode PRT` 명령으로 PRT를 선택합니다. 기본 바운스는 **6회**이고, 사전 계산 캐시는 로컬에서 생성합니다. 다른 UE6 프로젝트에 설치할 때는 필요한 설정을 해당 프로젝트에 반영하세요.
 
 예제는 UE DirectionalLight 하나를 공유합니다. 박스의 기존 면광원 영역은 개구부로 교체했으며, 관찰을 위한 전면 개구부는 유지했습니다.
 

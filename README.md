@@ -1,22 +1,24 @@
-# UE5-PRT-GI
+# PRTGI for Unreal Engine 6
 
 **English** | [한국어](README.ko.md) | [简体中文](README.zh-CN.md)
 
 [User guide · GitHub Wiki](https://github.com/mazelines/UE5-PRT-GI/wiki)
 
-A probe-based global illumination plugin for static scenes in UE 5.8. Includes a Cornell Box showcase, real-time directional light relighting, 1–12 indirect bounces, independent Probe Volumes, and visualization.
+This `ue6` branch contains a probe-based global illumination plugin and host project for static scenes in **Unreal Engine 6.0**. Includes a Cornell Box showcase, real-time directional light relighting, 1–12 indirect bounces, independent Probe Volumes, and visualization.
 
 ![PRT GI Cornell Box showcase](Plugins/PRTGI/docs/images/prt-gi-showcase.png)
 
 ## Installation
 
-Precomputed `.prtgi`, `.surfels` and `.surfels.multi` caches are generated locally and excluded from Git. A fresh checkout requires **Build Precomputation** for every participating volume before PRT lighting is available. The repository now contains the `UE_PRT_GI.uproject` host project, with the plugin under `Plugins/PRTGI`. The `ue6` branch's project targets use `Unreal6_0`; the UE 5.8 validation notes below describe the original plugin and do not establish validation of this host project.
+> **First run: manually build the precomputation cache.** Precomputed `.prtgi`, `.surfels` and `.surfels.multi` caches are **not included in Git**. Open the project in the UE6 Editor, load `PRTGI_Showcase`, select all six `PRTProbeVolume` actors, then run **Details → PRT → Build → Build Precomputation**. Wait for every volume to finish before comparing PRT lighting. **Compiling the C++ project or simply opening it does not generate these caches.** Other levels also require local precomputation for each participating volume.
 
-1. To use the bundled host project, open `UE_PRT_GI.uproject`. To install the plugin in another project, copy this repository's `Plugins/PRTGI` directory to `YourProject/Plugins/PRTGI`. This directory must directly contain `PRTGI.uplugin`, without an extra nested repository folder.
-2. Build the **Editor target** using the UE version and C++ toolchain that match your host project. Blueprint projects also need an environment capable of compiling this C++ plugin; add a C++ class first if needed to generate a project target.
-3. In **Edit → Plugins**, search for **UE5-PRT-GI**, enable it, and restart the Editor when prompted.
+The repository now contains the `UE_PRT_GI.uproject` host project, with the plugin under `Plugins/PRTGI`. Both Game and Editor targets use `BuildSettingsVersion.V9` and `EngineIncludeOrderVersion.Unreal6_0`. This branch has been built and tested in the UE6 Editor; the [bounce validation report](Plugins/PRTGI/Tools/validation_bounces.json) records the measured conditions and results.
 
-Currently validated on **Windows, UE 5.8, and DX12 / SM6**, using deferred rendering. The GI pass requires the GBuffer; Forward Shading is not supported by this path. The plugin references internal Renderer interfaces, so other UE versions and platforms require recompilation and validation. Precompiled DLLs are not guaranteed to be compatible across Engine builds. The current implementation does not require additional Engine source modifications to install the plugin.
+1. To use the bundled host project, associate `UE_PRT_GI.uproject` with your local **UE 6.0** installation, then open it. The checked-in engine association identifies the development machine’s engine installation. To install the plugin in another project, copy this repository's `Plugins/PRTGI` directory to `YourProject/Plugins/PRTGI`. This directory must directly contain `PRTGI.uplugin`, without an extra nested repository folder.
+2. Build the **UE_PRT_GIEditor** target with **UE 6.0**, **Win64**, and **Development Editor**. When installing the plugin in another project, build that project’s Editor target with UE6. Blueprint projects also need an environment capable of compiling this C++ plugin; add a C++ class first if needed to generate a project target.
+3. In **Edit → Plugins**, search for **PRT** (the current display name is **UE5-PRT-GI**), enable it, and restart the Editor when prompted.
+
+This branch is validated in **Unreal Engine 6.0, Windows / Win64, Development Editor, DX12 / SM6**, using deferred rendering. The GI pass requires the GBuffer; Forward Shading is not supported by this path. The plugin references internal Renderer interfaces, so other UE versions and platforms require recompilation and validation. Precompiled DLLs are not guaranteed to be compatible across Engine builds. The current implementation does not require additional Engine source modifications to install the plugin.
 
 ## Quick Start
 
@@ -27,13 +29,13 @@ Currently validated on **Windows, UE 5.8, and DX12 / SM6**, using deferred rende
 5. Press **Ctrl+Alt+4** to inspect PRT indirect lighting only, and **Ctrl+Alt+P** to view probes.
 6. Press **Ctrl+Alt+[ / ]** to rotate the sun and observe the relighting results.
 
-This plugin depends on the current UE 5.8 Renderer interfaces. Comparing against hardware ray tracing Lumen requires DX12 / SM6, Ray Tracing, and the relevant support settings in the project. These are host project rendering settings; the plugin does not forcibly override the project's rendering configuration.
+This branch uses UE6 Renderer interfaces. Comparing against hardware ray tracing Lumen requires DX12 / SM6, Ray Tracing, and the relevant support settings in the project. These are host project rendering settings; the plugin does not forcibly override the project's rendering configuration.
 
 When comparing against hardware ray tracing Lumen, enable **Support Hardware Ray Tracing**, **Support Compute Skin Cache**, and **Use Hardware Ray Tracing when available**, and use a supported GPU. Restart the Editor after changing settings that require it. See Epic's [Lumen Technical Details](https://dev.epicgames.com/documentation/en-us/unreal-engine/lumen-technical-details-in-unreal-engine).
 
 The bundled showcase's default map profile temporarily sets `r.Lumen.HardwareRayTracing=1`, `r.Lumen.ScreenProbeGather.ScreenTraces=0`, and `r.EyeAdaptation.CachedLightingPreExposure=8`. Previous values are restored when leaving the map. Its Lumen comparison therefore has diffuse screen traces disabled; it is not the default Lumen configuration. These overrides do not enable missing project-level hardware ray tracing support.
 
-See [showcase-renderer-settings.ini](Plugins/PRTGI/docs/showcase-renderer-settings.ini) for the configuration used in standalone validation. Selectively merge the settings into your host project as needed; this file does not take effect automatically. Do not use it to overwrite the entire project configuration.
+The UE6 host settings are in [Config/DefaultEngine.ini](Config/DefaultEngine.ini): Plugin GI uses `r.DynamicGlobalIlluminationMethod=2`, reflections use `r.ReflectionMethod=0`, and Substrate is enabled with `r.Substrate.ProjectGBufferFormat=0`. Use `PRTGI.SetMode PRT` to select Plugin GI at runtime; the command resolves the engine enum. The runtime PRT default is **6 bounces**, and generated caches remain local. When installing elsewhere, merge the relevant settings into that UE6 project.
 
 The showcase uses a single shared UE DirectionalLight. The original area-light regions of the boxes have been replaced with openings, and the front openings are retained for viewing.
 
