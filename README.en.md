@@ -8,8 +8,6 @@ This `ue6` branch contains a probe-based global illumination plugin and host pro
 
 ![PRT GI Cornell Box showcase](Plugins/PRTGI/docs/images/prt-gi-showcase-ue6-cfcd80c5.png)
 
-![PRT GI UE6 editor demo](Plugins/PRTGI/docs/images/prt-gi-showcase-ue6-demo.gif)
-
 ## Experimental changes from the fork baseline
 
 This `ue6` branch forks [wuzhy66/UE5-PRT-GI](https://github.com/wuzhy66/UE5-PRT-GI) to investigate quality and runtime changes in UE6. The comparison below uses the imported [upstream commit `69e08cf`](https://github.com/wuzhy66/UE5-PRT-GI/tree/69e08cfcdc3bb5c5ca1e83169c81ec95f47a67a9), not subsequent upstream development. **Probe/Surfel precomputation, GPU directional-light relighting, 1–4 indirect bounces, independent volumes, capture audits and near-clip safety already existed upstream.**
