@@ -15,7 +15,7 @@
 #include "Misc/FileHelper.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogPRTVolume, Log, All);
-static TAutoConsoleVariable<int32> CVarPRTBounces(TEXT("r.PRTGI.Bounces"),4,TEXT("Indirect bounces 1..12 (default 4); compare 4, 8, 12. Legacy caches cap at four until rebuilt."),ECVF_Default);
+static TAutoConsoleVariable<int32> CVarPRTBounces(TEXT("r.PRTGI.Bounces"),6,TEXT("Indirect bounces 1..12 (default 6); compare 4, 8, 12. Legacy caches cap at four until rebuilt."),ECVF_Default);
 static TAutoConsoleVariable<int32> CVarPRTMultiGPU(TEXT("r.PRTGI.MultiBounceGPU"),1,TEXT("Use precomputed path transport and GPU lighting. 0: legacy CPU one-bounce reference."),ECVF_Default);
 static TAutoConsoleVariable<int32> CVarPRTNearClipSafety(TEXT("r.PRTGI.ProbeNearClipSafety"),1,TEXT("Reject probes whose capture near-clip cube intersects cached geometry. 0: diagnostic comparison."),ECVF_Default);
 static TAutoConsoleVariable<int32> CVarPRTGPUReadback(TEXT("r.PRTGI.GPUReadback"),0,TEXT("Read GPU coefficients back for numeric diagnostics. Normal rendering keeps coefficients on GPU; showing probes also enables readback."),ECVF_Default);

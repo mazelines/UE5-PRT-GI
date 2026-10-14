@@ -39,7 +39,7 @@ The showcase uses a single shared UE DirectionalLight. The original area-light r
 
 | Volume | Local validation settings/results |
 |---|---|
-| PRT_Global, PRT_ClassicBox, PRT_ColorBox, PRT_InvertedBox | Built for 1–12 indirect bounces; defaults to 4 at runtime |
+| PRT_Global, PRT_ClassicBox, PRT_ColorBox, PRT_InvertedBox | Built for 1–12 indirect bounces; defaults to 6 at runtime |
 | PRT_ShinyBox | Built at 16×16 per face; 21 of 878 audited probes excluded with a capture warning |
 | PRT_MetallicBox | Built at 16×16 per face, with 40 cm probe spacing and a 2 cm transport cell size; 77 of 2,212 audited probes excluded with a capture warning |
 
@@ -83,7 +83,7 @@ A starting point is Priority=0 with roughly 200 cm spacing for a global volume, 
 - Select one or more volumes and click **Build Precomputation** to queue their builds. Use **Cancel Build** to cancel builds for the selected volumes.
 - Under **PRT → Build**, **Build Progress** covers geometry capture, transport computation, and saving. **Build Stage** describes the current operation; both appear alongside the build buttons. An existing valid geometry cache is reused, so a build may run only the transport stage. Progress is weighted by stage and is not an estimate of remaining time.
 - The current build combines UE scene capture with CPU transport precomputation. Runtime relighting uses the GPU by default; the entire build is not a GPU-only bake.
-- A build saves the data needed to switch between 1–12 indirect bounces. Switching between cached bounce counts at runtime does not require recapturing the scene. The default is 4 bounces.
+- A build saves the data needed to switch between 1–12 indirect bounces. Switching between cached bounce counts at runtime does not require recapturing the scene. The default is 6 bounces.
 - Build time depends on probe count, capture resolution, geometry complexity, transport cell size, and hardware. Validate a small volume first, then expand the coverage.
 - Rebuild after changing static geometry, materials, the probe grid layout, or capture parameters. Duplicating a volume generates a new GUID, so the duplicate needs its own cache.
 
@@ -128,7 +128,7 @@ Click the Editor / PIE viewport first to give it focus.
 | Ctrl+Alt+Shift+[ / ] | Decrease / increase DirectionalLight Pitch by 5° (default step) |
 | Ctrl+Alt+B | Legacy global bake command; does not build Actor Volumes |
 
-For local precomputation, select the corresponding `PRTProbeVolume` and click **Build Precomputation**. The default is 4 indirect bounces.
+For local precomputation, select the corresponding `PRTProbeVolume` and click **Build Precomputation**. The default is 6 indirect bounces.
 
 If focus or keyboard layout interferes with the shortcuts, run these commands individually in the UE Console:
 
@@ -182,7 +182,7 @@ On an RTX 4090, three static-frame measurements gave a median PRT apply cost of 
 
 ## Comparing 4, 8 and 12 bounces
 
-New v7 caches bake up to 12 orders once. Use `r.PRTGI.Bounces 4`, `8` or `12`, or **Ctrl+Alt+G** (4 → 8 → 12 → 4). The runtime default remains 4. Old v3–v6 caches cap the effective count at 4 and report that they need rebuilding. Rebuild all participating volumes to compare higher orders.
+New v7 caches bake up to 12 orders once. Use `r.PRTGI.Bounces 4`, `8` or `12`, or **Ctrl+Alt+G** (4 → 8 → 12 → 4). The runtime default is 6. Old v3–v6 caches cap the effective count at 4 and report that they need rebuilding. Rebuild all participating volumes to compare higher orders.
 
 **Transport Min Throughput** on each `PRTProbeVolume` defaults to **0.01**. After preserving the first four orders, the bake stops a path before its next trace when the largest RGB component of cumulative diffuse throughput falls below this threshold. Set 0 to disable this cutoff; the existing near-zero numerical guard remains. Changing the value invalidates the transport cache and requires **Build Precomputation**. This deterministic truncation is biased and is not a 1% radiance-error guarantee, especially with high-contrast lighting. It is independent of the current light direction or intensity.
 

@@ -38,7 +38,7 @@ UE 5.8 的静态场景 Probe GI 插件。包含 Cornell Box 示例、方向光�
 
 | Volume | 本地验证设置与结果 |
 |---|---|
-| PRT_Global、PRT_ClassicBox、PRT_ColorBox、PRT_InvertedBox | 已构建 1～12 次间接反弹数据，运行时默认 4 次 |
+| PRT_Global、PRT_ClassicBox、PRT_ColorBox、PRT_InvertedBox | 已构建 1～12 次间接反弹数据，运行时默认 6 次 |
 | PRT_ShinyBox | 已按每面 16×16 构建；878 个受检 Probe 中排除 21 个，带采集警告 |
 | PRT_MetallicBox | 已按每面 16×16 构建，保持 40 cm Probe 间距与 2 cm 表面聚合尺寸；2,212 个受检 Probe 中排除 77 个，带采集警告 |
 
@@ -82,7 +82,7 @@ Volume 当前为**轴对齐**体积，不支持旋转；每轴最多 32 个 Prob
 - 选中一个或多个 Volume，点击 **Build Precomputation** 将其加入构建队列；使用 **Cancel Build** 取消选中 Volume 的构建。
 - **PRT → Build** 中的**Build Progress**（构建总进度）覆盖几何采集、传输计算和保存，**Build Stage**（构建阶段）说明当前工作；两者与构建按钮放在一起。已有有效几何缓存时会复用，可能只执行传输阶段。进度按阶段分配，不代表剩余时间估计。
 - 当前构建结合 UE 场景采集与 CPU 传输预计算，运行时默认 GPU 重光照；整个 Build 不是纯 GPU 烘焙。
-- 构建保存供 1～12 次间接反弹切换使用的数据。运行时切换已有反弹次数无需重新采集，默认使用 4 次。
+- 构建保存供 1～12 次间接反弹切换使用的数据。运行时切换已有反弹次数无需重新采集，默认使用 6 次。
 - 用时取决于 Probe 数量、采集分辨率、几何复杂度、表面聚合尺寸及硬件。先构建小体积验证，再扩大范围。
 - 静态几何、材质、网格布局或采集参数改变后需要重新构建。复制 Volume 会生成新 GUID，新副本需要自己的缓存。
 
@@ -127,7 +127,7 @@ Volume 当前为**轴对齐**体积，不支持旋转；每轴最多 32 个 Prob
 | Ctrl+Alt+Shift+[ / ] | DirectionalLight Pitch 减 / 加 5°（默认步长） |
 | Ctrl+Alt+B | 旧版全局烘焙入口，不会构建 Actor Volumes |
 
-局部预计算请选中对应 `PRTProbeVolume`，点击 **Build Precomputation**。默认使用 4 次间接反弹。
+局部预计算请选中对应 `PRTProbeVolume`，点击 **Build Precomputation**。默认使用 6 次间接反弹。
 
 快捷键受焦点或键盘布局影响时，可在 UE Console 逐条执行：
 
