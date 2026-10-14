@@ -2,7 +2,7 @@
 
 정적 장면에서 프로브와 사전 계산된 광 전달 데이터를 사용해 간접광을 계산하는 Unreal Engine 플러그인입니다. 방향광을 회전하면 조명을 실시간으로 갱신하며, 간접광 반사 1~4회와 독립적인 프로브 볼륨을 지원합니다.
 
-![PRT GI Cornell Box 예제](https://raw.githubusercontent.com/mazelines/UE5-PRT-GI/ue6/Plugins/PRTGI/docs/images/prt-gi-showcase.png)
+![PRT GI Cornell Box 예제](https://raw.githubusercontent.com/mazelines/UE5-PRT-GI/ue6/Plugins/PRTGI/docs/images/prt-gi-showcase-ue6-cfcd80c5.png)
 
 ## 시작하기
 
