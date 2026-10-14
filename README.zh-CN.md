@@ -8,6 +8,27 @@
 
 ![PRT GI Cornell Box showcase](Plugins/PRTGI/docs/images/prt-gi-showcase-ue6-cfcd80c5.png)
 
+## 相对 Fork 原版的实验性改进
+
+此 `ue6` 分支基于 [wuzhy66/UE5-PRT-GI](https://github.com/wuzhy66/UE5-PRT-GI)，在 UE6 中实验改进画质与运行路径。下表的基准是 Fork 时的[原版提交 `69e08cf`](https://github.com/wuzhy66/UE5-PRT-GI/tree/69e08cfcdc3bb5c5ca1e83169c81ec95f47a67a9)，不包含上游之后的变化。**Probe/Surfel 预计算、GPU 方向光重光照、1～4 次间接反弹、独立 Volume、采集审计与近裁剪保护均为原版已有功能。**
+
+| 项目 | Fork 时的原版 | 此 UE6 分支的变化 |
+|---|---|---|
+| UE6 集成 | UE 5.8 插件，以数值选择 GI 模式 | 添加 UE6 宿主项目和 Target，改用引擎 GI 枚举，修复 UE6 中预计算后 PRT 未激活的问题 |
+| 二次命中查询 | 在命中点附近空间搜索已采集 Surfel 簇 | 将采集样本和传输源绑定到三角形，分离几何/着色法线，加入数值射线起点偏移，减少错误关联和自相交 |
+| 材质查询 | 通过附近源查询复用采集材质值 | 用保留原始 UV、顶点色的每三角形 16×16 图表查询基础色、金属度和切线空间法线，并增加内部覆盖检查与受限重试 |
+| 接收表面扩散能量 | 最终 PRT 接收表面没有对应的 GGX 能量修正 | 用 GBuffer 镜面参数/粗糙度与解析 GGX 近似为镜面波瓣预留能量；仅近似单个 GGX 接收材质，不是光泽传输 |
+| GPU 系数 | 重光照系数读回 CPU 后用于渲染 | 增加常驻 GPU 的 SH 缓冲与发布 pass，仅诊断和 Probe 显示需要 CPU 读回；此结构变化本身不证明整帧性能提高 |
+| 可见性与接触 | 首次命中平面的 Probe 可见性 | 增加深度矩、静态 BVH 线段、半球过渡对比及短距离接触遮挡。默认仍为平面方案；深度矩增大墙面斑纹，因此未作为默认值 |
+| 反弹次数 | 最大 4 次，默认 4 次 | 最多预计算 12 次，运行默认 6 次，支持 4/8/12 对比。保留前四阶，之后累计 RGB 吞吐量最大值低于 0.01 时提前终止；更改阈值需要重建 |
+| 诊断 | 已有缓存与传输检查 | 增加 v7 缓存及旧版读取、各阶路径/终止/材质命中统计、线性 HDR 对比工具，并扩展 GPU/CPU 验证和自动化测试 |
+
+本地 Showcase 验证中，六个 v7 缓存的二次表面查询遗漏均为 0，GPU/CPU 系数相对误差低于 `3.75e-5`，五项专项测试通过。ClassicBox 的提前终止对照实验减少了 5.76% 传输项和 6.71% 缓存大小，12 阶 Probe L0 能量总和降低 0.040%。**这些是本分支内部设置及缓存阶段的对比，不是与上游在完全相同条件下的整体画质/性能基准。** 条件与原始结果见[表面/接触验证](Plugins/PRTGI/Tools/validation_showcase.json)及[反弹/终止验证](Plugins/PRTGI/Tools/validation_bounces.json)。
+
+新增功能仍属实验。传输保持单个方向光驱动的静态 Lambert 扩散模型，不支持动态遮挡、天空/自发光传输、完整 Substrate 层和镜面 GI。提前终止是有偏近似，不保证图像误差上限。接触遮挡增加每帧 GPU 开销，12 阶缓存可能大于原版四阶缓存；MetalBox/ShinyBox 原有采集警告仍存在。
+
+分发方式也有变化：默认文档语言为韩语，Git 不包含生成缓存。首次打开项目后，需要按下方步骤手动执行 **Build Precomputation**。
+
 ## 安装
 
 > **首次运行必须手动预计算。** Git 仓库不包含 `.prtgi`、`.surfels`、`.surfels.multi` 缓存。请用 UE6 Editor 打开项目，加载 `PRTGI_Showcase`，选择六个 `PRTProbeVolume`，执行 **Details → PRT → Build → Build Precomputation**。等待所有 Volume 完成后再比较 PRT 光照。**仅编译 C++ 项目或打开项目不会生成这些缓存。** 其他关卡也需要为所有参与的 Volume 在本地预计算。

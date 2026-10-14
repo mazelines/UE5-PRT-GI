@@ -8,6 +8,27 @@ This `ue6` branch contains a probe-based global illumination plugin and host pro
 
 ![PRT GI Cornell Box showcase](Plugins/PRTGI/docs/images/prt-gi-showcase-ue6-cfcd80c5.png)
 
+## Experimental changes from the fork baseline
+
+This `ue6` branch forks [wuzhy66/UE5-PRT-GI](https://github.com/wuzhy66/UE5-PRT-GI) to investigate quality and runtime changes in UE6. The comparison below uses the imported [upstream commit `69e08cf`](https://github.com/wuzhy66/UE5-PRT-GI/tree/69e08cfcdc3bb5c5ca1e83169c81ec95f47a67a9), not subsequent upstream development. **Probe/Surfel precomputation, GPU directional-light relighting, 1–4 indirect bounces, independent volumes, capture audits and near-clip safety already existed upstream.**
+
+| Area | Fork baseline | Changes in this UE6 branch |
+|---|---|---|
+| UE6 integration | UE 5.8 plugin with numeric GI mode selection | Added UE6 host project/targets and engine-enum mode selection; fixed PRT failing to activate after precomputation in UE6 |
+| Secondary surface lookup | Spatial search for nearby captured Surfel clusters at ray hits | Bound captured samples and transport sources to triangles; separated geometric/shading normals and added numerical ray-origin offsets to reduce incorrect associations and self-intersections |
+| Material lookup | Reused captured Surfel material values via nearby source lookup | Added per-triangle 16×16 charts preserving original UVs and vertex colors, with base color, metallic and tangent-space normals; added interior coverage auditing and restricted retries |
+| Receiver diffuse energy | No corresponding GGX energy correction at the final PRT receiver | Used GBuffer specular/roughness with an analytic GGX approximation to reserve energy for the specular lobe; a single-GGX receiver approximation, not glossy transport |
+| GPU coefficients | Read relit coefficients back to the CPU before rendering | Added GPU-resident SH buffers and a publication pass; CPU readback is used for diagnostics/probe display. This structural change alone does not establish an overall frame-time improvement |
+| Visibility/contact | First-hit-plane probe visibility | Added comparison modes for depth moments, static BVH segments and hemisphere transition, plus short-range contact occlusion. Plane visibility remains the default; depth moments increased wall artifacts and were not adopted as the default |
+| Bounce count | Maximum 4, default 4 | Bake up to 12, runtime default 6, and 4/8/12 comparison. After four orders, terminate paths whose maximum RGB cumulative throughput falls below 0.01; changing the threshold requires rebuilding |
+| Diagnostics | Existing cache/transport checks | Added v7 caches with legacy readers, per-order path/termination/material-hit counters, linear HDR comparison tools, and expanded GPU/CPU validation and automation tests |
+
+In local showcase validation, all six v7 caches had zero unmapped secondary hits, GPU/CPU relative coefficient error stayed below `3.75e-5`, and five focused tests passed. A ClassicBox cutoff control reduced transport entries by 5.76% and cache size by 6.71%, with a 0.040% decrease in summed 12-order probe L0 energy. **These are comparisons between settings and cache stages within this branch, not a matched end-to-end quality/performance benchmark against upstream.** Conditions and raw results are in [surface/contact validation](Plugins/PRTGI/Tools/validation_showcase.json) and [bounce/cutoff validation](Plugins/PRTGI/Tools/validation_bounces.json).
+
+These additions are experimental. Transport remains Lambertian for static scenes driven by one directional light; dynamic occluders, sky/emissive transport, full Substrate layering and specular GI are unsupported. The biased cutoff does not bound image error. Contact occlusion adds per-frame GPU cost, and 12-order caches can be larger than upstream four-order caches. Existing MetalBox/ShinyBox capture warnings remain.
+
+Distribution also changed: Korean is the default documentation language, and generated caches are excluded from Git. On first opening the project, run **Build Precomputation** yourself as described below.
+
 ## Installation
 
 > **First run: manually build the precomputation cache.** Precomputed `.prtgi`, `.surfels` and `.surfels.multi` caches are **not included in Git**. Open the project in the UE6 Editor, load `PRTGI_Showcase`, select all six `PRTProbeVolume` actors, then run **Details → PRT → Build → Build Precomputation**. Wait for every volume to finish before comparing PRT lighting. **Compiling the C++ project or simply opening it does not generate these caches.** Other levels also require local precomputation for each participating volume.
