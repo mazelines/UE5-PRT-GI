@@ -1,0 +1,337 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-14",
+  "base_commit": "99a3e542e5bc2f99cafea456dfb8cab7c04aad9d",
+  "map": "/PRTGI/Maps/PRTGI_Showcase",
+  "map_state": "Existing local user-modified map; not saved or modified by this investigation.",
+  "engine": "UE6 Win64 Development Editor D3D12",
+  "issue": "Circular discontinuities on the ColorBox white sphere, caused primarily by hard receiver-hemisphere probe rejection.",
+  "change": {
+    "scope": "Activate the already implemented positive-hemisphere smoothstep path by default in plugin C++ and host project configuration.",
+    "cvar": "r.PRTGI.HemisphereTransition",
+    "before": 0,
+    "after": 0.2,
+    "weight": "smoothstep(0, 0.2 * min(probe_cell_spacing), dot(probe_position - receiver_position, receiver_normal))",
+    "visibility_mode": 1,
+    "behind_surface_probes": "Still rejected; no nonzero weight floor or across-wall fallback was added.",
+    "rebake_required": false,
+    "new_rays_or_transport_terms": false,
+    "not_claimed": "Not a port of full RTXGI wrap weighting, GIBS, SurfelPlus or Split Radiance Cascades."
+  },
+  "research": [
+    {
+      "title": "Shipping Dynamic Global Illumination in Frostbite",
+      "year": 2024,
+      "type": "SIGGRAPH Advances presentation, Diede Apers / EA Frostbite",
+      "url": "https://www.advances.realtimerendering.com/s2024/content/EA-GIBS2/Apers_Advances-s2024_Shipping-Dynamic-GI.pdf",
+      "reviewed_pdf_pages": [
+        15,
+        17,
+        20,
+        21,
+        22,
+        23
+      ],
+      "finding": "Probe reconstruction uses DDGI-like software interpolation and variance-depth attenuation; surfel surface normals and numerical ray offsets are separate concerns.",
+      "decision": "Keep visibility independent of the receiver-hemisphere transition. Do not disable occlusion to hide the rings."
+    },
+    {
+      "title": "SurfelPlus: A Surfel-Based Global Illumination Solution Optimized for Low-End Graphics Hardware",
+      "year": 2025,
+      "type": "SIGGRAPH Posters 2025, two-page publication",
+      "url": "https://doi.org/10.1145/3721250.3742969",
+      "author_pdf": "https://github.com/WANG-Ruipeng/SurfelPlus/blob/master/docs/files/Poster.pdf",
+      "finding": "Describes surfel lifecycle, a combined generation/shading pass, temporal aggregation, and filtered reflections.",
+      "decision": "It does not establish a specific fix for hard probe hemisphere boundaries in this SH-volume renderer."
+    },
+    {
+      "title": "Split Radiance Cascades: Real-Time Global Illumination via Sparse Radiance Probes",
+      "year": 2026,
+      "version": "arXiv v2, 2026-10-11",
+      "type": "arXiv preprint",
+      "url": "https://arxiv.org/abs/2607.20384v2",
+      "reviewed_pdf_pages": [
+        2,
+        6,
+        12
+      ],
+      "finding": "Sparse world-space cascades and ray splitting address spatial/angular detail; the limitations still acknowledge interpolation bias and sub-probe-scale leaks.",
+      "decision": "Potential future architecture work, not a drop-in correction for this reproducible discontinuity. No claim to exhaustively cover all 2026 literature."
+    },
+    {
+      "title": "Scaling Probe-Based Real-Time Dynamic Global Illumination for Production",
+      "year": 2021,
+      "type": "Published DDGI production work; arXiv first submission 2020",
+      "url": "https://arxiv.org/abs/2009.10796v3",
+      "implementation": "https://github.com/NVIDIAGameWorks/RTXGI-DDGI/blob/main/rtxgi-sdk/shaders/ddgi/Irradiance.hlsl",
+      "finding": "The public implementation explains loss of usable probes under naive backface tests and uses continuous wrap weights with separate visibility.",
+      "decision": "Use the continuity principle, but preserve the current positive-hemisphere rejection and first-hit planes. Existing smoothstep implementation suffices for the observed rings."
+    }
+  ],
+  "conditions": {
+    "camera": {
+      "location": {
+        "x": -167.83340342460883,
+        "y": 604.1362317286611,
+        "z": 296.9383141921399
+      },
+      "rotation": {
+        "pitch": -5.314858019346891,
+        "yaw": 14.95681904419249,
+        "roll": -2.2225641836930497e-07
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      }
+    },
+    "display_resolution": [
+      2048,
+      795
+    ],
+    "linear_hdr_resolution": [
+      1631,
+      633
+    ],
+    "hdr_resolution_note": "PreTonemapHDRColor is captured before TSR upscaling; ROI coordinates below are in the actual 1631x633 buffer, not the 2048x795 display.",
+    "bounces": 6,
+    "probe_visibility": 1,
+    "visibility_bias_cm": 1,
+    "contact_samples": 8,
+    "contact_radius_cm": 20,
+    "anti_aliasing_method": 4,
+    "hdr_indirect_only": true,
+    "hdr_pre_exposure_override": 1,
+    "exposure_fitting": false,
+    "screenshots": "Full-lighting PNG pair with the same camera, exposure settings and light; these are not path-traced references."
+  },
+  "ablation": [
+    {
+      "transition": 0,
+      "visibility": 1,
+      "contact_samples": 8,
+      "observation": "Reproduces circular patches on the sphere."
+    },
+    {
+      "transition": 0.2,
+      "visibility": 1,
+      "contact_samples": 8,
+      "observation": "Strong reduction of the circular discontinuities."
+    },
+    {
+      "transition": 0.5,
+      "visibility": 1,
+      "contact_samples": 8,
+      "observation": "Also smooths the rings; not selected because the smaller tested width is sufficient."
+    },
+    {
+      "transition": 0.2,
+      "visibility": 0,
+      "contact_samples": 8,
+      "observation": "Leaks appear along the wall/floor corner; not selected."
+    },
+    {
+      "transition": 0.2,
+      "visibility": 1,
+      "contact_samples": 0,
+      "observation": "Smooth sphere remains; contact correction is not needed to remove the rings."
+    }
+  ],
+  "linear_hdr_metrics": {
+    "resolution": [
+      1631,
+      633
+    ],
+    "regions": {
+      "sphere_upper_ring": {
+        "roi": [
+          820,
+          175,
+          948,
+          303
+        ],
+        "baseline_vs_candidate": {
+          "pixels": 16384,
+          "rgb_rmse": 69.64457758863931,
+          "rgb_relative_rmse": 0.023013923215372323,
+          "rgb_mae": 39.405598958333336,
+          "reference_mean_luminance": 2454.6822583984376,
+          "candidate_mean_luminance": 2452.5646198242184,
+          "relative_luminance_bias": -0.0008626935592064808
+        },
+        "continuity": [
+          {
+            "laplacian_mean": 32.91982796674225,
+            "laplacian_p99": 164.5311999999999,
+            "laplacian_p999": 338.8064000000004
+          },
+          {
+            "laplacian_mean": 29.54759123204839,
+            "laplacian_p99": 68.62080000000242,
+            "laplacian_p999": 78.16720000000169
+          }
+        ]
+      },
+      "sphere_interior": {
+        "roi": [
+          685,
+          171,
+          956,
+          438
+        ],
+        "baseline_vs_candidate": {
+          "pixels": 72357,
+          "rgb_rmse": 82.62611580077547,
+          "rgb_relative_rmse": 0.016149762885479944,
+          "rgb_mae": 47.80124475402057,
+          "reference_mean_luminance": 4398.869777221277,
+          "candidate_mean_luminance": 4406.586586950813,
+          "relative_luminance_bias": 0.001754271010589027
+        },
+        "continuity": [
+          {
+            "laplacian_mean": 45.41766013046222,
+            "laplacian_p99": 210.30400000000373,
+            "laplacian_p999": 480.19450880000085
+          },
+          {
+            "laplacian_mean": 41.53485186504873,
+            "laplacian_p99": 128.0,
+            "laplacian_p999": 210.30399999999645
+          }
+        ]
+      },
+      "flat_left_wall": {
+        "roi": [
+          159,
+          119,
+          478,
+          342
+        ],
+        "baseline_vs_candidate": {
+          "pixels": 71137,
+          "rgb_rmse": 46.02411146296075,
+          "rgb_relative_rmse": 0.019161491877682,
+          "rgb_mae": 23.69474863057668,
+          "reference_mean_luminance": 2756.845961432166,
+          "candidate_mean_luminance": 2727.958504182071,
+          "relative_luminance_bias": -0.010478444444929381
+        },
+        "continuity": [
+          {
+            "laplacian_mean": 12.262828085701644,
+            "laplacian_p99": 52.57600000000093,
+            "laplacian_p999": 68.65920000000006
+          },
+          {
+            "laplacian_mean": 11.938237355296396,
+            "laplacian_p99": 52.57599999999911,
+            "laplacian_p999": 68.65920000000006
+          }
+        ]
+      },
+      "back_wall": {
+        "roi": [
+          1075,
+          135,
+          1298,
+          318
+        ],
+        "baseline_vs_candidate": {
+          "pixels": 40809,
+          "rgb_rmse": 7.358394154567094,
+          "rgb_relative_rmse": 0.006389789117160819,
+          "rgb_mae": 2.337981000922999,
+          "reference_mean_luminance": 1049.3876064593594,
+          "candidate_mean_luminance": 1050.7010937783332,
+          "relative_luminance_bias": 0.0012516703178966145
+        },
+        "continuity": [
+          {
+            "laplacian_mean": 4.516989595260123,
+            "laplacian_p99": 22.88640000000032,
+            "laplacian_p999": 29.68960000000061
+          },
+          {
+            "laplacian_mean": 4.477486702832432,
+            "laplacian_p99": 22.88640000000032,
+            "laplacian_p999": 29.68960000000061
+          }
+        ]
+      }
+    }
+  },
+  "metric_definition": {
+    "continuity": "Absolute 4-neighbor discrete Laplacian of linear luminance: abs(L_left+L_right+L_up+L_down-4*L_center). Percentiles exclude the ROI one-pixel border.",
+    "ring_p99_reduction": 0.5829313832269961,
+    "interpretation": "Artifact-sensitive local continuity diagnostic, NOT a standard perceptual quality score or a reduction of error against physical ground truth.",
+    "baseline_vs_candidate": "Differences between the old and new render, NOT errors against a path-traced reference.",
+    "samples": "One completed HDR capture per configuration; no statistical significance claim."
+  },
+  "planar_regression": {
+    "cameras": {
+      "showcase-interior": {
+        "location": {
+          "x": -800,
+          "y": 50,
+          "z": 430
+        },
+        "rotation": {
+          "pitch": -5,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "classic": {
+        "location": {
+          "x": -100,
+          "y": 50,
+          "z": 355
+        },
+        "rotation": {
+          "pitch": -3,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "shiny": {
+        "location": {
+          "x": -600,
+          "y": 350,
+          "z": 400
+        },
+        "rotation": {
+          "pitch": -12,
+          "yaw": 90,
+          "roll": 0
+        }
+      }
+    },
+    "mode": "Indirect-only paired PNG captures, transition 0 versus 0.2",
+    "observations": "Visual inspection of ClassicBox, ShinyBox and the interior overview found no new obvious planar rings or through-wall leaks. Existing capture and SH limitations remain.",
+    "color_box_flat_regions": "Left-wall mean luminance changed approximately -1.05%, back wall +0.13%; local p99 Laplacian remained unchanged to rounding."
+  },
+  "screenshots": {
+    "before": {
+      "path": "Plugins/PRTGI/docs/images/prt-gi-curved-before.png",
+      "sha256": "d89b9579b97fb0c7269dbc6d42ac45c836f9ff04f2fba1001132427b98587490"
+    },
+    "after": {
+      "path": "Plugins/PRTGI/docs/images/prt-gi-curved-after.png",
+      "sha256": "4f41940a1e2aeb42f7b15c664417062f0931eeed1c695b509a3423d245fa505f"
+    }
+  },
+  "validation": {
+    "editor_build": "Succeeded, UE_PRT_GIEditor Win64 Development, 43.27 seconds; suffixed PRTGI/PRTGIEditor modules built to preserve the running editor.",
+    "compiler_warnings": "Existing UE6 deprecated API warnings remain.",
+    "runtime": "Existing shader path exercised with the new CVar value. Editor retained; no forced module unload or map save.",
+    "historical_reports": "validation_showcase.json and validation_bounces.json are unchanged; their metrics were measured with transition 0.",
+    "discarded_captures": "Early non-verified HDR exports were not used because screenshot completion was not synchronized. An outside-room overview is excluded; valid interior planar comparisons are listed above.",
+    "limitations": [
+      "No new path-traced accuracy benchmark.",
+      "No claim of resolving every SH, visibility or probe-support artifact.",
+      "Performance was not benchmarked in this change."
+    ]
+  }
+}

@@ -189,13 +189,15 @@ The HDR tool compares aligned linear RGB without exposure fitting. Use `PreTonem
 | `r.PRTGI.GPUReadback` | 0 | Retain CPU coefficients for numeric diagnostics |
 | `r.PRTGI.ProbeVisibility` | 1 | 0 disabled, 1 first-hit planes, 2 experimental depth moments, 3 static BVH segments |
 | `r.PRTGI.VisibilityBiasCm` | 1 | Receiver visibility bias in cm |
-| `r.PRTGI.HemisphereTransition` | 0 | Positive-hemisphere transition as a fraction of probe spacing |
+| `r.PRTGI.HemisphereTransition` | 0.2 | Positive-hemisphere transition as a fraction of the smallest probe spacing; 0 restores the legacy hard gate |
 | `r.PRTGI.ContactSamples` | 0 | Optional static contact occlusion: 0–16 rays per pixel |
 | `r.PRTGI.ContactRadiusCm` | 20 | Maximum contact ray distance |
 | `r.PRTGI.ContactBiasCm` | 0.1 | Contact ray origin/intersection bias |
 | `r.PRTGI.Debug` | 0 | 1 visibility, 2 interpolation support, 3 hemisphere acceptance, 4 contact visibility |
 
-Contact occlusion is a short-range diffuse approximation, with extra GPU cost and possible sampling noise. It does not replace transported radiance. Depth moments blend four neighboring capture samples and are experimental; they produced wall artifacts in the showcase. Exact BVH visibility also remains optional. Restore `IndirectOnly 0`, `Debug 0`, `ProbeVisibility 1`, `HemisphereTransition 0` after diagnostics.
+Contact occlusion is a short-range diffuse approximation, with extra GPU cost and possible sampling noise. It does not replace transported radiance. Depth moments blend four neighboring capture samples and are experimental; they produced wall artifacts in the showcase. Exact BVH visibility also remains optional. Restore `IndirectOnly 0`, `Debug 0`, `ProbeVisibility 1`, `HemisphereTransition 0.2` after diagnostics.
+
+Curved-receiver rings were reproduced when probes abruptly lost their contribution at the receiver tangent plane. The existing continuous transition now defaults to 0.2, fading support before rejection while retaining visibility tests; no rebake is needed. This conservative setting follows the continuous-weighting principle used by DDGI, not the complete RTXGI wrap weighting that also admits back-facing probes. Recent sources and controlled comparisons are recorded in [curved-surface validation](Plugins/PRTGI/Tools/validation_curved_surface.json). Earlier v6 and bounce metrics remain historical measurements with transition width 0.
 
 The implementation follows the geometric/shading-normal and reconstruction guidance in [EA GIBS, SIGGRAPH 2024](https://www.advances.realtimerendering.com/s2024/content/EA-GIBS2/Apers_Advances-s2024_Shipping-Dynamic-GI.pdf). [SurfelPlus, SIGGRAPH 2025 poster](https://github.com/WANG-Ruipeng/SurfelPlus/blob/master/docs/files/Poster.pdf) and [DDGI](https://arxiv.org/abs/2009.10796) inform further comparisons; this plugin is not an implementation of their complete systems.
 

@@ -1,5 +1,7 @@
 # 콘텐츠·캐시·패키징
 
+사전 계산된 `.surfels`, `.surfels.multi`, `.prtgi` 캐시는 Git 저장소에 올리지 않습니다. 프로젝트를 처음 내려받으면 에디터에서 각 `PRTProbeVolume`의 **Build Precomputation**을 직접 실행하세요. 아래 캐시 경로는 로컬 빌드 후 생성되는 위치입니다.
+
 아래 경로는 플러그인 폴더 `Plugins/PRTGI`를 기준으로 합니다.
 
 - `Content/Maps`: 예제 레벨.

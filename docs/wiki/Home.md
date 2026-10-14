@@ -1,10 +1,12 @@
 # PRTGI 사용자 가이드
 
-정적 장면에서 프로브와 사전 계산된 광 전달 데이터를 사용해 간접광을 계산하는 Unreal Engine 플러그인입니다. 방향광을 회전하면 조명을 실시간으로 갱신하며, 간접광 반사 1~4회와 독립적인 프로브 볼륨을 지원합니다.
+정적 장면에서 프로브와 사전 계산된 광 전달 데이터를 사용해 간접광을 계산하는 Unreal Engine 플러그인입니다. 현재 UE6 브랜치는 방향광 회전에 따른 실시간 조명 갱신, 최대 12회 간접광 반사와 독립적인 프로브 볼륨을 지원하며, 런타임 기본값은 6회입니다.
 
 ![PRT GI Cornell Box 예제](https://raw.githubusercontent.com/mazelines/UE5-PRT-GI/ue6/Plugins/PRTGI/docs/images/prt-gi-showcase-ue6-cfcd80c5.png)
 
 ## 시작하기
+
+사전 계산 캐시는 Git 저장소에 포함하지 않습니다. 프로젝트를 처음 열면 각 `PRTProbeVolume`의 **Build Precomputation**을 실행해야 PRT 간접광을 사용할 수 있습니다.
 
 처음 사용한다면 설치 → 빠른 시작 → 프로브 볼륨 순서로 읽으세요.
 
@@ -15,6 +17,7 @@
 - [콘텐츠·캐시·패키징](https://github.com/mazelines/UE5-PRT-GI/wiki/Content-and-Packaging)
 - [지원 범위와 제한 사항](https://github.com/mazelines/UE5-PRT-GI/wiki/Limitations)
 - [단축키와 콘솔 명령](https://github.com/mazelines/UE5-PRT-GI/wiki/Shortcuts)
+- [곡면의 원형 경계와 프로브 보간 개선](https://github.com/mazelines/UE5-PRT-GI/wiki/Curved-Surface-Interpolation)
 
 ## 프로젝트 구성
 

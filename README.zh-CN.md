@@ -168,3 +168,5 @@ PRTGI.Status
 `PRTGI.SetMode Offline` 是历史命令名称，表示退出动态 GI；它不会自动生成离线光照或 Path Tracing 参考图。
 
 新的 v7 缓存最多预计算 12 次反弹。`Transport Min Throughput` 默认 0.01：保留前四阶，之后在累计 RGB 吞吐量最大值低于阈值时提前终止路径；0 关闭此截断。修改阈值需要重新构建。该有偏近似不保证 1% 图像误差。旧 v3–v6 缓存仍可读取，但最多使用 4 次反弹。详细比较见 [English README](README.en.md#comparing-4-8-and-12-bounces)。
+
+曲面接收光照时，探针在表面切平面处被突然排除会形成圆形边界。`r.PRTGI.HemisphereTransition` 现在默认为 `0.2`，启用已有的连续权重过渡，同时保留可见性检查；无需重新预计算。设为 `0` 可比较旧的硬切换。此修改参考 DDGI 的连续权重原则，并未移植其完整 wrap 权重或动态 GI 系统。最新文献与对照条件见 [曲面验证记录](Plugins/PRTGI/Tools/validation_curved_surface.json)；先前的 v6 和反弹次数实验仍是过渡宽度为 0 时的历史数据。

@@ -189,13 +189,15 @@ HDR 비교 도구는 노출을 임의로 맞추지 않고 정렬된 선형 RGB �
 | `r.PRTGI.GPUReadback` | 0 | 수치 진단을 위해 CPU에도 계수 보관 |
 | `r.PRTGI.ProbeVisibility` | 1 | 0 끔, 1 최초 교차 평면, 2 실험적 깊이 모멘트, 3 정적 BVH 선분 검사 |
 | `r.PRTGI.VisibilityBiasCm` | 1 | 수신 표면 가시성 바이어스(cm) |
-| `r.PRTGI.HemisphereTransition` | 0 | 프로브 간격 대비 양의 반구 전환 폭 |
+| `r.PRTGI.HemisphereTransition` | 0.2 | 최소 프로브 간격 대비 양의 반구 전환 폭. 0은 기존의 불연속 제외 방식 |
 | `r.PRTGI.ContactSamples` | 0 | 선택적 정적 접촉 차폐: 픽셀당 0~16개 광선 |
 | `r.PRTGI.ContactRadiusCm` | 20 | 접촉 광선 최대 거리 |
 | `r.PRTGI.ContactBiasCm` | 0.1 | 접촉 광선 시작점·교차 바이어스 |
 | `r.PRTGI.Debug` | 0 | 1 가시성, 2 보간 지지율, 3 반구 수용률, 4 접촉 가시성 |
 
-접촉 차폐는 짧은 거리의 확산광 근사입니다. GPU 비용과 표본 노이즈가 추가되며 전송된 복사휘도를 대신하지 않습니다. 깊이 모멘트는 캡처의 네 이웃 표본을 보간하는 실험으로, Showcase에서 벽의 얼룩이 증가했습니다. 정확한 BVH 가시성도 선택 기능으로 유지합니다. 진단 후 `IndirectOnly 0`, `Debug 0`, `ProbeVisibility 1`, `HemisphereTransition 0`으로 복원하세요.
+접촉 차폐는 짧은 거리의 확산광 근사입니다. GPU 비용과 표본 노이즈가 추가되며 전송된 복사휘도를 대신하지 않습니다. 깊이 모멘트는 캡처의 네 이웃 표본을 보간하는 실험으로, Showcase에서 벽의 얼룩이 증가했습니다. 정확한 BVH 가시성도 선택 기능으로 유지합니다. 진단 후 `IndirectOnly 0`, `Debug 0`, `ProbeVisibility 1`, `HemisphereTransition 0.2`로 복원하세요.
+
+곡면의 원형 경계는 프로브가 수신 표면의 접평면을 넘을 때 기여도가 갑자기 사라지는 현상으로 재현했습니다. 기존 연속 전환 경로를 기본값 0.2로 활성화해 경계 근처의 기여도를 부드럽게 줄입니다. 가시성 검사는 유지하며 재사전 계산은 필요 없습니다. DDGI의 연속 가중치 원칙을 참고한 보수적인 설정으로, 뒤쪽 프로브에도 가중치를 주는 RTXGI의 wrap 방식 전체를 이식한 것은 아닙니다. 확인한 최신 자료와 비교 조건은 [곡면 검증 기록](Plugins/PRTGI/Tools/validation_curved_surface.json)에 있습니다. 기존 v6·바운스 검증 수치는 전환 폭 0에서 얻은 과거 기록입니다.
 
 기하·셰이딩 법선 분리와 재구성은 [EA GIBS SIGGRAPH 2024 발표](https://www.advances.realtimerendering.com/s2024/content/EA-GIBS2/Apers_Advances-s2024_Shipping-Dynamic-GI.pdf)를 참고했습니다. [SurfelPlus SIGGRAPH 2025 포스터](https://github.com/WANG-Ruipeng/SurfelPlus/blob/master/docs/files/Poster.pdf)와 [DDGI](https://arxiv.org/abs/2009.10796)도 비교 자료로 사용하며, 이 플러그인이 해당 시스템 전체를 구현한 것은 아닙니다.
 

@@ -269,7 +269,10 @@ float3 SampleVolume(uint Volume, float3 Position, float3 SurfaceNormal, float Ba
             // Reject probes behind the receiving surface. Do not add angular
             // weighting here: near-wall probes at grazing angles otherwise
             // create periodic dark patches on broad flat receivers.
-            // Curved-surface gate transitions are a known remaining limitation.
+            // Fade to zero BEFORE the tangent-plane rejection. A binary gate makes
+            // a probe's finite contribution pop on/off along circles on a sphere.
+            // The default positive-hemisphere ramp is continuous with zero slope
+            // at both ends; keep true behind-surface probes and wall visibility rejected.
             float3 ProbePosition = ProbeVolumes[V].xyz + float3(Coordinate) * CellSize;
             float FrontDistance=dot(ProbePosition - Position, SurfaceNormal);
             if (FrontDistance <= 0.0) continue;

@@ -8,5 +8,6 @@
 - [콘텐츠·캐시·패키징](https://github.com/mazelines/UE5-PRT-GI/wiki/Content-and-Packaging)
 - [지원 범위와 제한 사항](https://github.com/mazelines/UE5-PRT-GI/wiki/Limitations)
 - [단축키와 콘솔 명령](https://github.com/mazelines/UE5-PRT-GI/wiki/Shortcuts)
+- [곡면의 원형 경계와 프로브 보간 개선](https://github.com/mazelines/UE5-PRT-GI/wiki/Curved-Surface-Interpolation)
 
 [소스 저장소](https://github.com/mazelines/UE5-PRT-GI)

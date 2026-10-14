@@ -58,8 +58,8 @@ namespace
         TEXT("Probe visibility: 0 disabled, 1 first-hit planes, 2 depth moments, 3 exact static BVH segments (higher cost)."),ECVF_RenderThreadSafe);
     TAutoConsoleVariable<float> CVarPRTVisibilityBias(TEXT("r.PRTGI.VisibilityBiasCm"),1.f,
         TEXT("First-hit plane / depth moment receiver bias in cm. Keep fixed for controlled A/B captures."),ECVF_RenderThreadSafe);
-    TAutoConsoleVariable<float> CVarPRTHemisphereTransition(TEXT("r.PRTGI.HemisphereTransition"),0.f,
-        TEXT("Positive-hemisphere transition width as a fraction of probe spacing; 0 preserves legacy, try 0.05 for A/B."),ECVF_RenderThreadSafe);
+    TAutoConsoleVariable<float> CVarPRTHemisphereTransition(TEXT("r.PRTGI.HemisphereTransition"),.2f,
+        TEXT("Positive-hemisphere smooth transition as a fraction of the smallest probe spacing (0..0.5, default 0.2). 0 restores the legacy hard gate and can show rings on curved receivers. No rebake required."),ECVF_RenderThreadSafe);
     TAutoConsoleVariable<int32> CVarPRTDebug(TEXT("r.PRTGI.Debug"),0,
         TEXT("0 lighting, 1 visibility acceptance, 2 interpolation support, 3 hemisphere rejection, 4 contact visibility. Red=low support/high rejection."),ECVF_RenderThreadSafe);
     TAutoConsoleVariable<int32> CVarPRTContactSamples(TEXT("r.PRTGI.ContactSamples"),0,
