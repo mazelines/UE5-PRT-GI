@@ -6,7 +6,7 @@
 
 This `ue6` branch contains a probe-based global illumination plugin and host project for static scenes in **Unreal Engine 6.0**. Includes a Cornell Box showcase, real-time directional light relighting, 1–12 indirect bounces, independent Probe Volumes, and visualization.
 
-![PRT GI Cornell Box showcase](Plugins/PRTGI/docs/images/prt-gi-showcase.png)
+![PRT GI Cornell Box showcase](Plugins/PRTGI/docs/images/prt-gi-showcase-ue6-cfcd80c5.png)
 
 ## Installation
 

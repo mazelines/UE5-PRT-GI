@@ -6,7 +6,7 @@
 
 `ue6` 브랜치는 **Unreal Engine 6.0**의 정적 장면을 위한 프로브 기반 전역 조명(GI) 플러그인과 실행용 프로젝트를 제공합니다. Cornell Box 예제, 방향광 변화에 따른 실시간 조명 갱신, 1~12회 간접광 반사, 독립적인 프로브 볼륨과 시각화 기능을 제공합니다.
 
-![PRT GI Cornell Box 예제](Plugins/PRTGI/docs/images/prt-gi-showcase.png)
+![PRT GI Cornell Box 예제](Plugins/PRTGI/docs/images/prt-gi-showcase-ue6-cfcd80c5.png)
 
 ## 설치
 

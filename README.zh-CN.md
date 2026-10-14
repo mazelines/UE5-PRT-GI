@@ -6,7 +6,7 @@
 
 `ue6` 分支提供面向 **Unreal Engine 6.0** 静态场景的 Probe GI 插件与宿主项目。包含 Cornell Box 示例、方向光实时重光照、1～12 次间接反弹、独立 Probe Volume 与可视化。
 
-![PRT GI Cornell Box showcase](Plugins/PRTGI/docs/images/prt-gi-showcase.png)
+![PRT GI Cornell Box showcase](Plugins/PRTGI/docs/images/prt-gi-showcase-ue6-cfcd80c5.png)
 
 ## 安装
 
