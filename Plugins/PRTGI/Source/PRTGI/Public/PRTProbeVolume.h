@@ -45,6 +45,8 @@ public:
     /** 静态表面聚合尺寸；越小越准确，缓存和 GPU 工作量越大。 */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PRT|Build", meta=(ToolTip="Static surface aggregation size. Smaller values increase detail, cache size, and GPU work.", ClampMin="1", ClampMax="100", Units="cm"))
     float TransportCellSize = 2.0f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PRT|Build", meta=(ToolTip="After the first four bounces, stop paths whose maximum RGB throughput falls below this value. 0 disables this biased truncation; rebuild transport after changing it. This is not a lighting-error bound.", ClampMin="0", ClampMax="0.25"))
+    float TransportMinThroughput = .01f;
     /** 0=无过渡，1/2=-/+X，3/4=-/+Y，5/6=-/+Z。仅在开口设置过渡。 */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PRT|Blending", meta=(ToolTip="0=none, 1/2=-/+X, 3/4=-/+Y, 5/6=-/+Z. Configure transitions only at openings.", ClampMin="0", ClampMax="6"))
     int32 BlendFace = 0;

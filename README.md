@@ -4,13 +4,13 @@
 
 [User guide · GitHub Wiki](https://github.com/mazelines/UE5-PRT-GI/wiki)
 
-A probe-based global illumination plugin for static scenes in UE 5.8. Includes a Cornell Box showcase, real-time directional light relighting, 1–4 indirect bounces, independent Probe Volumes, and visualization.
+A probe-based global illumination plugin for static scenes in UE 5.8. Includes a Cornell Box showcase, real-time directional light relighting, 1–12 indirect bounces, independent Probe Volumes, and visualization.
 
 ![PRT GI Cornell Box showcase](Plugins/PRTGI/docs/images/prt-gi-showcase.png)
 
 ## Installation
 
-**Git LFS** is required when fetching this plugin through Git: precomputed caches are stored in LFS. After cloning, run `git lfs install --local` and `git lfs pull` in the repository directory to ensure that the `.surfels` / `.multi` files contain actual binary data rather than LFS pointer text. The repository now contains the `UE_PRT_GI.uproject` host project, with the plugin under `Plugins/PRTGI`. The `ue6` branch's project targets use `Unreal6_0`; the UE 5.8 validation notes below describe the original plugin and do not establish validation of this host project.
+Precomputed `.prtgi`, `.surfels` and `.surfels.multi` caches are generated locally and excluded from Git. A fresh checkout requires **Build Precomputation** for every participating volume before PRT lighting is available. The repository now contains the `UE_PRT_GI.uproject` host project, with the plugin under `Plugins/PRTGI`. The `ue6` branch's project targets use `Unreal6_0`; the UE 5.8 validation notes below describe the original plugin and do not establish validation of this host project.
 
 1. To use the bundled host project, open `UE_PRT_GI.uproject`. To install the plugin in another project, copy this repository's `Plugins/PRTGI` directory to `YourProject/Plugins/PRTGI`. This directory must directly contain `PRTGI.uplugin`, without an extra nested repository folder.
 2. Build the **Editor target** using the UE version and C++ toolchain that match your host project. Blueprint projects also need an environment capable of compiling this C++ plugin; add a C++ class first if needed to generate a project target.
@@ -22,9 +22,10 @@ Currently validated on **Windows, UE 5.8, and DX12 / SM6**, using deferred rende
 
 1. Enable **Show Plugin Content** in the Content Browser.
 2. Open **PRTGI Content → Maps → PRTGI_Showcase**, asset path `/PRTGI/Maps/PRTGI_Showcase`.
-3. Click the Editor viewport or PIE game view, then press **Ctrl+Alt+2** to enable PRT and **Ctrl+Alt+3** to compare it with Lumen.
-4. Press **Ctrl+Alt+4** to inspect PRT indirect lighting only, and **Ctrl+Alt+P** to view probes.
-5. Press **Ctrl+Alt+[ / ]** to rotate the sun and observe the relighting results.
+3. Select the six `PRTProbeVolume` actors and run **Build Precomputation**; wait for completion.
+4. Click the Editor viewport or PIE game view, then press **Ctrl+Alt+2** to enable PRT and **Ctrl+Alt+3** to compare it with Lumen.
+5. Press **Ctrl+Alt+4** to inspect PRT indirect lighting only, and **Ctrl+Alt+P** to view probes.
+6. Press **Ctrl+Alt+[ / ]** to rotate the sun and observe the relighting results.
 
 This plugin depends on the current UE 5.8 Renderer interfaces. Comparing against hardware ray tracing Lumen requires DX12 / SM6, Ray Tracing, and the relevant support settings in the project. These are host project rendering settings; the plugin does not forcibly override the project's rendering configuration.
 
@@ -36,13 +37,13 @@ See [showcase-renderer-settings.ini](Plugins/PRTGI/docs/showcase-renderer-settin
 
 The showcase uses a single shared UE DirectionalLight. The original area-light regions of the boxes have been replaced with openings, and the front openings are retained for viewing.
 
-| Volume | Bundled cache |
+| Volume | Local validation settings/results |
 |---|---|
-| PRT_Global, PRT_ClassicBox, PRT_ColorBox, PRT_InvertedBox | Built for 1–4 indirect bounces; defaults to 4 at runtime |
+| PRT_Global, PRT_ClassicBox, PRT_ColorBox, PRT_InvertedBox | Built for 1–12 indirect bounces; defaults to 4 at runtime |
 | PRT_ShinyBox | Built at 16×16 per face; 21 of 878 audited probes excluded with a capture warning |
 | PRT_MetallicBox | Built at 16×16 per face, with 40 cm probe spacing and a 2 cm transport cell size; 77 of 2,212 audited probes excluded with a capture warning |
 
-If your download does not include the large cache files, run **Build Precomputation** before comparing the lighting results.
+Caches are not bundled. Select all six showcase `PRTProbeVolume` actors and run **Build Precomputation**, then wait for completion before comparing lighting. Locally generated caches must still be included when packaging a playable build.
 
 ## Adding a Probe Volume to Your Scene
 
@@ -82,13 +83,13 @@ A starting point is Priority=0 with roughly 200 cm spacing for a global volume, 
 - Select one or more volumes and click **Build Precomputation** to queue their builds. Use **Cancel Build** to cancel builds for the selected volumes.
 - Under **PRT → Build**, **Build Progress** covers geometry capture, transport computation, and saving. **Build Stage** describes the current operation; both appear alongside the build buttons. An existing valid geometry cache is reused, so a build may run only the transport stage. Progress is weighted by stage and is not an estimate of remaining time.
 - The current build combines UE scene capture with CPU transport precomputation. Runtime relighting uses the GPU by default; the entire build is not a GPU-only bake.
-- A build saves the data needed to switch between 1–4 indirect bounces. Switching between cached bounce counts at runtime does not require recapturing the scene. The default is 4 bounces.
+- A build saves the data needed to switch between 1–12 indirect bounces. Switching between cached bounce counts at runtime does not require recapturing the scene. The default is 4 bounces.
 - Build time depends on probe count, capture resolution, geometry complexity, transport cell size, and hardware. Validate a small volume first, then expand the coverage.
 - Rebuild after changing static geometry, materials, the probe grid layout, or capture parameters. Duplicating a volume generates a new GUID, so the duplicate needs its own cache.
 
 Probes with geometry audit mismatches or empty captures are excluded from transport and interpolation. A build can finish with a warning if the excluded count is at most 5% of audited probes and the remaining data passes validation; larger failures stop the build. Inspect **Build Warnings**, **Invalid Probes**, and the affected area before using the result. The capture audit uses collision queries on the **Visibility** channel, so participating geometry needs collision that matches its rendered surfaces and blocks this channel.
 
-Each volume is limited to **16 million transport entries**, at 64 bytes per entry, for up to approximately **976.6 MiB** of transport data. The file loading limit allows an additional 128 MiB for geometry indices and other data. This is not a total memory budget: temporary build copies, CPU caches, and GPU buffers require additional memory. Capture resolution is not automatically reduced when approaching the limit.
+Each volume is limited to **24 million transport entries**, at 64 bytes per entry, for up to approximately **1464.8 MiB** of transport data. The file loading limit allows an additional 384 MiB for geometry indices and other data. This is not a total memory budget: temporary build copies, CPU caches, and GPU buffers require additional memory. Capture resolution is not automatically reduced when approaching the limit.
 
 ## Content Layout
 
@@ -122,7 +123,7 @@ Click the Editor / PIE viewport first to give it focus.
 | Ctrl+Alt+3 | Lumen GI |
 | Ctrl+Alt+4 | Toggle PRT indirect diffuse only / full view |
 | Ctrl+Alt+P | Show / hide probes; the volume's Display Mode determines whether they appear as position markers or lighting spheres |
-| Ctrl+Alt+G | Cycle through 1–4 indirect bounces; requires the corresponding cache |
+| Ctrl+Alt+G | Cycle through 4 / 8 / 12 indirect bounces; requires the corresponding cache |
 | Ctrl+Alt+[ / ] | Decrease / increase DirectionalLight Yaw by 5° (default step) |
 | Ctrl+Alt+Shift+[ / ] | Decrease / increase DirectionalLight Pitch by 5° (default step) |
 | Ctrl+Alt+B | Legacy global bake command; does not build Actor Volumes |
@@ -145,7 +146,7 @@ PRTGI.Status
 
 ## Surfel Quality Diagnostics
 
-New v6 transport caches bind captured samples to triangles, separate geometric and shading normals, and evaluate secondary hits using per-triangle material charts with original UVs and vertex colors. The bake includes base color, metallic and tangent-space normals. Transport remains Lambertian. Receiver shading uses GBuffer specular/roughness and UE's analytic GGX energy approximation with multiple-scattering compensation to reserve energy for the specular lobe. This receiver correction approximates a single GGX material; it does not implement all Substrate layers, glossy transport, dynamic occluders, sky lighting or emissive transport. Existing v3–v5 caches remain readable and retain their version on save. Rebuild every participating volume to adopt v6 consistently.
+Since v6, transport caches bind captured samples to triangles, separate geometric and shading normals, and evaluate secondary hits using per-triangle material charts with original UVs and vertex colors. The bake includes base color, metallic and tangent-space normals. Transport remains Lambertian. Receiver shading uses GBuffer specular/roughness and UE's analytic GGX energy approximation with multiple-scattering compensation to reserve energy for the specular lobe. This receiver correction approximates a single GGX material; it does not implement all Substrate layers, glossy transport, dynamic occluders, sky lighting or emissive transport. Existing v3–v6 caches remain readable and retain their version on save. Rebuild every participating volume to adopt v7 consistently.
 
 The material baker checks every interior chart texel. If primitive transforms cause raster clipping, only materials proven independent of vertex/world data may retry without primitive data. Other failures stop the bake and retain the previous cache. Charts use 16×16 tiles per triangle and therefore do not preserve arbitrarily fine texture detail.
 
@@ -175,6 +176,34 @@ Contact occlusion is a short-range diffuse approximation, with extra GPU cost an
 
 The implementation follows the geometric/shading-normal and reconstruction guidance in [EA GIBS, SIGGRAPH 2024](https://www.advances.realtimerendering.com/s2024/content/EA-GIBS2/Apers_Advances-s2024_Shipping-Dynamic-GI.pdf). [SurfelPlus, SIGGRAPH 2025 poster](https://github.com/WANG-Ruipeng/SurfelPlus/blob/master/docs/files/Poster.pdf) and [DDGI](https://arxiv.org/abs/2009.10796) inform further comparisons; this plugin is not an implementation of their complete systems.
 
-Showcase validation on UE6: all six v6 caches have zero unmapped secondary hits (previously 0.68–9.26%). At the fixed camera, RGB relative RMSE against the diffuse-component HDR reference changed from **23.24% / 32.61% / 24.84%** to **18.02% / 16.70% / 11.24%** for ClassicBox / ColorBox / contact-region ROIs with 8 contact samples. These are limited-region comparisons, not a claim of complete scene equivalence. GPU/CPU coefficient error is at most `3.75e-5`; five focused automation tests pass. MetalBox and ShinyBox retain their existing capture-audit exclusions.
+Earlier v6 showcase validation on UE6: all six v6 caches have zero unmapped secondary hits (previously 0.68–9.26%). At the fixed camera, RGB relative RMSE against the diffuse-component HDR reference changed from **23.24% / 32.61% / 24.84%** to **18.02% / 16.70% / 11.24%** for ClassicBox / ColorBox / contact-region ROIs with 8 contact samples. These are limited-region comparisons, not a claim of complete scene equivalence. GPU/CPU coefficient error is at most `3.75e-5`; five focused automation tests pass. MetalBox and ShinyBox retain their existing capture-audit exclusions.
 
 On an RTX 4090, three static-frame measurements gave a median PRT apply cost of **0.499 ms** without contact correction and **2.725 ms** with 8 samples (1740×590 input, TSR to 2164×733). Total six-volume transport files grew from **1651 MiB to 2157 MiB**. The host project's quality preset enables 8 contact samples; the plugin default remains 0. Set `r.PRTGI.ContactSamples 0` for the lower-cost option. Detailed conditions, ROI coordinates, cache counters and remaining limitations are in [validation_showcase.json](Plugins/PRTGI/Tools/validation_showcase.json).
+
+## Comparing 4, 8 and 12 bounces
+
+New v7 caches bake up to 12 orders once. Use `r.PRTGI.Bounces 4`, `8` or `12`, or **Ctrl+Alt+G** (4 → 8 → 12 → 4). The runtime default remains 4. Old v3–v6 caches cap the effective count at 4 and report that they need rebuilding. Rebuild all participating volumes to compare higher orders.
+
+**Transport Min Throughput** on each `PRTProbeVolume` defaults to **0.01**. After preserving the first four orders, the bake stops a path before its next trace when the largest RGB component of cumulative diffuse throughput falls below this threshold. Set 0 to disable this cutoff; the existing near-zero numerical guard remains. Changing the value invalidates the transport cache and requires **Build Precomputation**. This deterministic truncation is biased and is not a 1% radiance-error guarantee, especially with high-contrast lighting. It is independent of the current light direction or intensity.
+
+Paths are not traced for 8 or 12 bounces every frame. Light or bounce-count changes re-evaluate source lighting and cached transport into SH coefficients. Static frames interpolate those coefficients; the separate contact-occlusion pass still runs per frame. All orders share one cache, so selecting 4 does not shrink the allocated cache, although GPU transport evaluation skips later sorted entries.
+
+`PRTGI.DumpQuality` and `quality_report.py` include per-order paths, early termination counts, the maximum order and cutoff. `PRTGI.ValidateMultiBounce` now reports `bounce_counts: [1,4,8,12]` alongside its energy array (legacy caches cap the last two entries).
+
+```text
+python Plugins/PRTGI/Tools/compare_bounces.py reference12.exr b4.exr b8.exr b12.exr --roi classic 930 260 1190 510 --roi color 1490 330 1810 580 --output comparison.json
+```
+
+Use the linear `*_PreTonemapHDRColor.exr` files. For this comparison, use one 12-bounce reference, identical camera/light/exposure settings, and the same contact-occlusion setting for all candidates.
+
+UE6 showcase results against the 12-bounce diffuse-component reference (RGB relative RMSE, contact samples 8):
+
+| ROI | 4 bounces | 8 bounces | 12 bounces |
+|---|---:|---:|---:|
+| InvertedBox | 32.86% | 20.38% | 17.97% |
+| ClassicBox | 21.06% | 19.23% | 19.12% |
+| ColorBox | 17.47% | 16.04% | 16.33% |
+
+These single-frame captures contain rendering noise; the small ColorBox difference does not establish that 12 is worse. Eight orders provide most of the improvement in ClassicBox and ColorBox, while InvertedBox benefits more from 12. On an RTX 4090, the six-volume cached transport evaluation took approximately **2.16 / 2.91 / 3.04 ms** at 4 / 8 / 12 (median of 2 / 3 / 3 complete relight samples). Source-light evaluation adds roughly 8.7–8.9 ms to these relight events. Static-frame profiles contained no transport dispatches; changing the maximum order does not add a per-frame path-tracing loop.
+
+In a ClassicBox control bake, cutoff 0.01 reduced transport entries by **5.76%** and cache size by **6.71%** versus cutoff 0, with **0.040%** lower summed 12-order probe L0 energy. This is not an image-error guarantee. All six v7 caches total **3016.94 MiB**, have zero unmapped secondary hits, and passed CRC checks. GPU/CPU relative coefficient error remains below `3.75e-5`; all five focused tests passed. Existing MetalBox and ShinyBox capture warnings remain. See [validation_bounces.json](Plugins/PRTGI/Tools/validation_bounces.json) for ROI coordinates, conditions, raw timings and limitations.

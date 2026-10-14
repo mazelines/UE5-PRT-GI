@@ -35,9 +35,9 @@ uint32 MultiBounceBaseCRC(const FSurfelVolume& Base)
 namespace
 {
 constexpr uint32 MultiMagic = 0x34424D50; // PMB4, companion file; never replaces legacy geometry.
-constexpr int32 MultiVersion = 6;
-constexpr int32 MaxTerms = 16000000; // 1024 MB packed transport budget, never silently coarsen.
-constexpr int64 MaxCacheBytes = int64(MaxTerms)*sizeof(FMultiBounceTerm)+128*1024*1024;
+constexpr int32 MultiVersion = 7;
+constexpr int32 MaxTerms = 24000000; // 1536 MB packed transport budget, never silently coarsen.
+constexpr int64 MaxCacheBytes = int64(MaxTerms)*sizeof(FMultiBounceTerm)+384*1024*1024;
 struct FTriangle
 {
     FVector3f A, B, C; bool Shadow = true; uint32 SurfaceGroup = 0;
@@ -183,6 +183,7 @@ TSharedPtr<FMultiBounceData,ESPMode::ThreadSafe> Build(TSharedPtr<FSurfelVolume,
 {
     const double Start=FPlatformTime::Seconds();
     auto Data=MakeShared<FMultiBounceData,ESPMode::ThreadSafe>();
+    Data->MinThroughput=Job->MinThroughput;
     Data->Signature=Base->SceneSignature;Data->BaseCRC=MultiBounceBaseCRC(*Base);Data->CellSize=CellSize;Data->ProbeCount=Base->Validity.Num();Data->Validity=Base->Validity;
     if(Geometry.IsEmpty()){Data->Error=TEXT("No supported opaque static geometry");return Data;}
     TArray<FNode> BVH;BuildBVH(Geometry,BVH,0,Geometry.Num());
@@ -260,14 +261,18 @@ TSharedPtr<FMultiBounceData,ESPMode::ThreadSafe> Build(TSharedPtr<FSurfelVolume,
             const auto& Sample=Base->Samples[SampleIndex];int32 Source=SourceForSample[SampleIndex];
             FVector3f Position=Positions[SampleIndex],Normal=Sample.Normal,Throughput(1);
             int32 CurrentTriangle=SampleTriangles[SampleIndex];
-            for(int32 Bounce=0;Bounce<4;++Bounce)
+            for(int32 Bounce=0;Bounce<Data->MaxBounces;++Bounce)
             {
                 ++Data->Paths[Bounce];auto& W=Weights.FindOrAdd((uint64(Bounce)<<32)|uint32(Source));
                 for(int C=0;C<9;++C)W.C[C]+=Throughput*Sample.Weights[C];
-                if(Bounce==3)break;
+                if(Bounce==Data->MaxBounces-1)break;
                 // Cosine importance sampling cancels cos(theta)/pi: only diffuse reflectance remains.
                 Throughput*=FVector3f(Data->Surfaces[Source*3+2]);
                 if(Throughput.GetMax()<1.e-7f)break;
+                // Deterministic, light-independent truncation. Preserve the first four
+                // orders; this threshold is throughput, not a radiance-error bound.
+                if(Bounce>=3 && Data->MinThroughput>0 && Throughput.GetMax()<Data->MinThroughput)
+                {++Data->TerminatedLowThroughput[Bounce];break;}
                 const FVector3f D=CosineDirection(Normal,HashRandom(uint32(SampleIndex))^uint32(0xa511e9b3*(Bounce+1)));
                 const FVector3f GeometryNormal=CurrentTriangle>=0?TriangleNormal(*Data,CurrentTriangle,Normal):Normal;
                 if(FVector3f::DotProduct(D,GeometryNormal)<=0)break;
@@ -315,16 +320,16 @@ TSharedPtr<FMultiBounceData,ESPMode::ThreadSafe> Build(TSharedPtr<FSurfelVolume,
     Data->BuildSeconds=FPlatformTime::Seconds()-Start;
     Data->QuantizationRelativeError=FMath::Sqrt(QuantizationDelta/FMath::Max(QuantizationEnergy,1.e-30));
     if(Data->QuantizationRelativeError>.001f){Data->Error=TEXT("FP16 transport error exceeds 0.1%; cache rejected");return Data;}
-    UE_LOG(LogPRTMulti,Display,TEXT("Precomputed 1..4 bounce paths: probes=%d sources=%d terms=%d paths=%d/%d/%d/%d missing=%d/%d seconds=%.3f"),
+    UE_LOG(LogPRTMulti,Display,TEXT("Precomputed 1..12 bounce paths: probes=%d sources=%d terms=%d paths=%d/%d/%d/%d missing=%d/%d seconds=%.3f"),
         Data->ProbeCount,Data->Surfaces.Num()/3,Data->Terms.Num(),Data->Paths[0],Data->Paths[1],Data->Paths[2],Data->Paths[3],Data->UnmappedHits,Data->SurfaceHits,Data->BuildSeconds);
     UE_LOG(LogPRTMulti,Display,TEXT("Reprojected %d captured samples onto static triangles; max ray displacement %.4f cm"),Data->CorrectedSamples,Data->MaxPositionCorrectionCm);
     return Data;
 }
 }
 
-TSharedPtr<FMultiBounceBuild,ESPMode::ThreadSafe> BuildMultiBounce(UWorld* World,TSharedPtr<FSurfelVolume> Base,float CellSize)
+TSharedPtr<FMultiBounceBuild,ESPMode::ThreadSafe> BuildMultiBounce(UWorld* World,TSharedPtr<FSurfelVolume> Base,float CellSize,float MinThroughput)
 {
-    auto Job=MakeShared<FMultiBounceBuild,ESPMode::ThreadSafe>();TArray<FTriangle> Geometry;uint32 SurfaceGroup=0;
+    auto Job=MakeShared<FMultiBounceBuild,ESPMode::ThreadSafe>();Job->MinThroughput=FMath::Clamp(MinThroughput,0.f,.25f);TArray<FTriangle> Geometry;uint32 SurfaceGroup=0;
     for(TActorIterator<AActor> It(World);It;++It)
     {
         if(It->IsA<APRTProbeVolume>())continue;
@@ -391,29 +396,36 @@ bool FMultiBounceData::Save(const FString& Path)const
     if(!Error.IsEmpty() || Ranges.Num()!=ProbeCount || Terms.IsEmpty() || Terms.Num()>MaxTerms)return false;
     if(!SourceGeometry.IsEmpty() && SourceGeometry.Num()!=Surfaces.Num()/3)return false;
     if(CacheVersion<3 || CacheVersion>MultiVersion)return false;
+    if(MaxBounces<1 || MaxBounces>MaxTransportBounces || !FMath::IsFinite(MinThroughput) || MinThroughput<0 || MinThroughput>.25f)return false;
+    for(const auto& T:Terms)if(T.Bounce>uint32(CacheVersion>=7?MaxBounces:4))return false;
+    const int64 EstimatedBytes=int64(Terms.Num())*64+int64(Surfaces.Num()+Triangles.Num()+Nodes.Num())*16
+        +int64(SourceGeometry.Num())*16+int64(ProbeCount)*12+1024;
+    if(EstimatedBytes>MaxCacheBytes)return false;
     // A loaded v3 cache has no per-bounce counters or bound geometry. Preserve
     // its version on resave instead of inventing incomplete v4 metadata.
     TArray<uint8> Bytes;FMemoryWriter Ar(Bytes);uint32 M=MultiMagic;int32 V=CacheVersion;Ar<<M<<V;
     auto Sig=Signature;auto Cell=CellSize;auto P=ProbeCount;auto CRC=BaseCRC;Ar<<Sig<<Cell<<P<<CRC;
+    if(V>=7){auto B=MaxBounces;auto Cutoff=MinThroughput;Ar<<B<<Cutoff;}
     for(const auto* Array:{&Surfaces,&Triangles,&Nodes}){int32 N=Array->Num();Ar<<N;Ar.Serialize(const_cast<FVector4f*>(Array->GetData()),int64(N)*sizeof(FVector4f));}
     int32 TermCount=Terms.Num();Ar<<TermCount;Ar.Serialize(const_cast<FMultiBounceTerm*>(Terms.GetData()),int64(TermCount)*sizeof(FMultiBounceTerm));
     Ar.Serialize(const_cast<FUintVector2*>(Ranges.GetData()),int64(ProbeCount)*sizeof(FUintVector2));
     Ar.Serialize(const_cast<float*>(Validity.GetData()),int64(ProbeCount)*sizeof(float));
-    Ar.Serialize(const_cast<int32*>(Paths),sizeof(Paths));auto Missing=UnmappedHits,Hits=SurfaceHits;Ar<<Missing<<Hits;
+    Ar.Serialize(const_cast<int32*>(Paths),(V>=7?MaxTransportBounces:4)*sizeof(int32));auto Missing=UnmappedHits,Hits=SurfaceHits;Ar<<Missing<<Hits;
     auto Seconds=BuildSeconds,Quantization=QuantizationRelativeError;Ar<<Seconds<<Quantization;
     auto Corrected=CorrectedSamples;auto MaxCorrection=MaxPositionCorrectionCm;Ar<<Corrected<<MaxCorrection;
     if(V>=4)
     {
         for(int32 S=0;S<Surfaces.Num()/3;++S){FVector4f G=SourceGeometry.IsValidIndex(S)?SourceGeometry[S]:FVector4f(0);Ar<<G;}
         auto Bound=BoundSamples,Unbound=UnboundSamples;Ar<<Bound<<Unbound;
-        Ar.Serialize(const_cast<int32*>(UnmappedByBounce),sizeof(UnmappedByBounce));
+        Ar.Serialize(const_cast<int32*>(UnmappedByBounce),(V>=7?MaxTransportBounces-1:3)*sizeof(int32));
     }
     if(V>=5){auto Count=MaterialHits;Ar<<Count;}
+    if(V>=7)Ar.Serialize(const_cast<int32*>(TerminatedLowThroughput),sizeof(TerminatedLowThroughput));
     uint32 PayloadCRC=FCrc::MemCrc32(Bytes.GetData(),Bytes.Num());Ar<<PayloadCRC;
     IFileManager::Get().MakeDirectory(*FPaths::GetPath(Path),true);
     return !Ar.IsError() && Bytes.Num()<=MaxCacheBytes && FFileHelper::SaveArrayToFile(Bytes,*(Path+TEXT(".tmp"))) && IFileManager::Get().Move(*Path,*(Path+TEXT(".tmp")),true,true);
 }
-TSharedPtr<FMultiBounceData,ESPMode::ThreadSafe> FMultiBounceData::Load(const FString& Path,uint64 Expected,float Cell,uint32 ExpectedBaseCRC)
+TSharedPtr<FMultiBounceData,ESPMode::ThreadSafe> FMultiBounceData::Load(const FString& Path,uint64 Expected,float Cell,uint32 ExpectedBaseCRC,float ExpectedMinThroughput)
 {
     const int64 Size=IFileManager::Get().FileSize(*Path);if(Size<64 || Size>MaxCacheBytes)return nullptr;
     TArray<uint8> Bytes;if(!FFileHelper::LoadFileToArray(Bytes,*Path))return nullptr;
@@ -423,6 +435,14 @@ TSharedPtr<FMultiBounceData,ESPMode::ThreadSafe> FMultiBounceData::Load(const FS
     Ar<<Data->Signature<<Data->CellSize<<Data->ProbeCount<<Data->BaseCRC;
     if(M!=MultiMagic || V<3 || V>MultiVersion || Expected!=Data->Signature || Cell!=Data->CellSize || ExpectedBaseCRC!=Data->BaseCRC || Data->ProbeCount<1 || Data->ProbeCount>32768)return nullptr;
     Data->CacheVersion=V;
+    Data->MaxBounces=4;Data->MinThroughput=0;
+    if(V>=7)
+    {
+        Ar<<Data->MaxBounces<<Data->MinThroughput;
+        if(Data->MaxBounces<4 || Data->MaxBounces>MaxTransportBounces || !FMath::IsFinite(Data->MinThroughput)
+            || Data->MinThroughput<0 || Data->MinThroughput>.25f
+            || (ExpectedMinThroughput>=0 && Data->MinThroughput!=ExpectedMinThroughput))return nullptr;
+    }
     for(auto* Array:{&Data->Surfaces,&Data->Triangles,&Data->Nodes})
     {
         int32 N=0;Ar<<N;if(Ar.IsError() || N<1 || N>MaxTerms || int64(N)*16>Ar.TotalSize()-Ar.Tell())return nullptr;
@@ -433,11 +453,11 @@ TSharedPtr<FMultiBounceData,ESPMode::ThreadSafe> FMultiBounceData::Load(const FS
     if(Ar.IsError() || TermCount<1 || TermCount>MaxTerms || int64(TermCount)*64>Ar.TotalSize()-Ar.Tell())return nullptr;
     Data->Terms.SetNumUninitialized(TermCount);Ar.Serialize(Data->Terms.GetData(),int64(TermCount)*64);
     if(Data->Surfaces.Num()%3 || Data->Triangles.Num()%3 || Data->Nodes.Num()%2)return nullptr;
-    const int64 Tail=int64(Data->ProbeCount)*12+sizeof(Data->Paths)+8+8+8+8+4
-        +(V>=4?int64(Data->Surfaces.Num()/3)*16+20:0)+(V>=5?4:0);if(Ar.TotalSize()-Ar.Tell()!=Tail)return nullptr;
+    const int64 Tail=int64(Data->ProbeCount)*12+(V>=7?MaxTransportBounces:4)*4+8+8+8+8+4
+        +(V>=4?int64(Data->Surfaces.Num()/3)*16+20:0)+(V>=5?4:0)+(V>=7?(MaxTransportBounces-4)*4+MaxTransportBounces*4:0);if(Ar.TotalSize()-Ar.Tell()!=Tail)return nullptr;
     Data->Ranges.SetNum(Data->ProbeCount);Ar.Serialize(Data->Ranges.GetData(),int64(Data->ProbeCount)*8);
     Data->Validity.SetNum(Data->ProbeCount);Ar.Serialize(Data->Validity.GetData(),int64(Data->ProbeCount)*4);
-    Ar.Serialize(Data->Paths,sizeof(Data->Paths));Ar<<Data->UnmappedHits<<Data->SurfaceHits<<Data->BuildSeconds<<Data->QuantizationRelativeError;
+    Ar.Serialize(Data->Paths,(V>=7?MaxTransportBounces:4)*sizeof(int32));Ar<<Data->UnmappedHits<<Data->SurfaceHits<<Data->BuildSeconds<<Data->QuantizationRelativeError;
     Ar<<Data->CorrectedSamples<<Data->MaxPositionCorrectionCm;
     if(V>=4)
     {
@@ -449,17 +469,24 @@ TSharedPtr<FMultiBounceData,ESPMode::ThreadSafe> FMultiBounceData::Load(const FS
             if(G.ContainsNaN() || G.W<0 || (Length>0 && (!FMath::IsNearlyEqual(Length,1.f,.01f) || G.W<=0)))return nullptr;
         }
         Ar<<Data->BoundSamples<<Data->UnboundSamples;
-        Ar.Serialize(Data->UnmappedByBounce,sizeof(Data->UnmappedByBounce));
+        Ar.Serialize(Data->UnmappedByBounce,(V>=7?MaxTransportBounces-1:3)*sizeof(int32));
         if(Data->BoundSamples<0 || Data->UnboundSamples<0)return nullptr;
         int64 Missing=0;for(int32 Count:Data->UnmappedByBounce){if(Count<0)return nullptr;Missing+=Count;}
         if(Missing!=Data->UnmappedHits)return nullptr;
     }
     if(V>=5){Ar<<Data->MaterialHits;if(Data->MaterialHits<0 || Data->MaterialHits>Data->SurfaceHits)return nullptr;}
+    if(V>=7)
+    {
+        Ar.Serialize(Data->TerminatedLowThroughput,sizeof(Data->TerminatedLowThroughput));
+        for(int32 B=0;B<MaxTransportBounces;++B)
+            if(Data->Paths[B]<0 || Data->TerminatedLowThroughput[B]<0 || Data->TerminatedLowThroughput[B]>Data->Paths[B]
+                || (B<3 && Data->TerminatedLowThroughput[B]!=0))return nullptr;
+    }
     uint32 End=0;for(const auto R:Data->Ranges){if(R.X!=End||R.Y<R.X||R.Y>uint32(Data->Terms.Num()))return nullptr;End=R.Y;}
     if(End!=uint32(Data->Terms.Num()))return nullptr;
     for(const auto& T:Data->Terms)
     {
-        if(T.Source>=uint32(Data->Surfaces.Num()/3)||T.Bounce<1||T.Bounce>4)return nullptr;
+        if(T.Source>=uint32(Data->Surfaces.Num()/3)||T.Bounce<1||T.Bounce>uint32(Data->MaxBounces))return nullptr;
         for(int C=0;C<9;++C)if(T.Weight(C).ContainsNaN())return nullptr;
     }
     for(int I=0;I<Data->Nodes.Num();I+=2){const float A=Data->Nodes[I].W,B=Data->Nodes[I+1].W;
@@ -518,14 +545,13 @@ void FMultiBounceData::EvaluateUnclusteredCPU(const FSurfelVolume& Base,const FV
 }
 FString FMultiBounceData::QualityReport()const
 {
-    const FString Bound=CacheVersion>=4?FString::FromInt(BoundSamples):TEXT("null");
-    const FString Unbound=CacheVersion>=4?FString::FromInt(UnboundSamples):TEXT("null");
-    const FString MissingByBounce=CacheVersion>=4?FString::Printf(TEXT("[%d,%d,%d]"),UnmappedByBounce[0],UnmappedByBounce[1],UnmappedByBounce[2]):TEXT("null");
-    const FString Material=CacheVersion>=5?FString::FromInt(MaterialHits):TEXT("null");
-    return FString::Printf(TEXT("{\"cache_version\":%d,\"probes\":%d,\"sources\":%d,\"terms\":%d,\"bound_samples\":%s,\"unbound_samples\":%s,\"surface_hits\":%d,\"unmapped_hits\":%d,\"unmapped_hit_fraction\":%.9g,\"unmapped_by_bounce\":%s,\"paths\":[%d,%d,%d,%d],\"max_capture_correction_cm\":%.9g,\"fp16_relative_error\":%.9g,\"build_seconds\":%.6f,\"material_hits\":%s}"),
-        CacheVersion,ProbeCount,Surfaces.Num()/3,Terms.Num(),*Bound,*Unbound,SurfaceHits,UnmappedHits,
-        double(UnmappedHits)/FMath::Max(1,SurfaceHits),*MissingByBounce,
-        Paths[0],Paths[1],Paths[2],Paths[3],MaxPositionCorrectionCm,QuantizationRelativeError,BuildSeconds,*Material);
+    auto Array=[](const int32* Values,int32 Count){FString R=TEXT("[");for(int32 I=0;I<Count;++I){if(I)R+=TEXT(",");R+=FString::FromInt(Values[I]);}return R+TEXT("]");};
+    return FString::Printf(TEXT("{\"cache_version\":%d,\"max_bounces\":%d,\"min_throughput\":%.9g,\"probes\":%d,\"sources\":%d,\"terms\":%d,\"bound_samples\":%s,\"unbound_samples\":%s,\"surface_hits\":%d,\"unmapped_hits\":%d,\"unmapped_hit_fraction\":%.9g,\"unmapped_by_bounce\":%s,\"paths\":%s,\"terminated_low_throughput\":%s,\"max_capture_correction_cm\":%.9g,\"fp16_relative_error\":%.9g,\"build_seconds\":%.6f,\"material_hits\":%s}"),
+        CacheVersion,MaxBounces,MinThroughput,ProbeCount,Surfaces.Num()/3,Terms.Num(),
+        CacheVersion>=4?*FString::FromInt(BoundSamples):TEXT("null"),CacheVersion>=4?*FString::FromInt(UnboundSamples):TEXT("null"),
+        SurfaceHits,UnmappedHits,double(UnmappedHits)/FMath::Max(1,SurfaceHits),CacheVersion>=4?*Array(UnmappedByBounce,MaxBounces-1):TEXT("null"),
+        *Array(Paths,MaxBounces),CacheVersion>=7?*Array(TerminatedLowThroughput,MaxBounces):TEXT("null"),
+        MaxPositionCorrectionCm,QuantizationRelativeError,BuildSeconds,CacheVersion>=5?*FString::FromInt(MaterialHits):TEXT("null"));
 }
 }
 
@@ -544,7 +570,7 @@ bool FPRTMultiBouncePhysics::RunTest(const FString&)
     for(float Z:{0.f,1.f})
     {Geometry.Add({FVector3f(-10000,-10000,Z),FVector3f(10000,-10000,Z),FVector3f(10000,10000,Z)});
      Geometry.Add({FVector3f(-10000,-10000,Z),FVector3f(10000,10000,Z),FVector3f(-10000,10000,Z)});}
-    auto Job=MakeShared<FMultiBounceBuild,ESPMode::ThreadSafe>();auto Data=Build(Base,MoveTemp(Geometry),100.f,Job);
+    auto Job=MakeShared<FMultiBounceBuild,ESPMode::ThreadSafe>();Job->MinThroughput=0;auto Data=Build(Base,Geometry,100.f,Job);
     TestTrue(TEXT("Transport built"),Data->Error.IsEmpty());
     TArray<FVector4f> SH[4];for(int B=1;B<=4;++B)Data->EvaluateCPU(FVector3f(0,0,-1),FVector3f(1),UE_PI,false,.05f,B,SH[B-1]);
     // Only ceiling receives the injected light. Floor direct=0; second=.5f*rhoCeiling;
@@ -553,6 +579,17 @@ bool FPRTMultiBouncePhysics::RunTest(const FString&)
     TestTrue(TEXT("Second bounce equals analytic diffuse transport"),FVector3f(SH[1][0]).Equals(FVector3f(.4f,.1f,.1f),.003f));
     TestTrue(TEXT("Third order has zero source injection in this setup"),FVector3f(SH[2][0]).Equals(FVector3f(SH[1][0]),1.e-5f));
     TestTrue(TEXT("Fourth order uses products of reflectance, not repeated total lighting"),FVector3f(SH[3][0]).Equals(FVector3f(.56f,.11f,.11f),.005f));
+    TArray<FVector4f> SH8,SH12;
+    Data->EvaluateCPU(FVector3f(0,0,-1),FVector3f(1),UE_PI,false,.05f,8,SH8);
+    Data->EvaluateCPU(FVector3f(0,0,-1),FVector3f(1),UE_PI,false,.05f,12,SH12);
+    TestTrue(TEXT("Eight-order geometric series"),FVector3f(SH8[0]).Equals(FVector3f(.6496f,.1111f,.1111f),.005f));
+    TestTrue(TEXT("Twelve-order geometric series"),FVector3f(SH12[0]).Equals(FVector3f(.663936f,.111111f,.111111f),.005f));
+    auto CutJob=MakeShared<FMultiBounceBuild,ESPMode::ThreadSafe>();CutJob->MinThroughput=.05f;
+    auto Cut=Build(Base,Geometry,100.f,CutJob);TArray<FVector4f> Cut4,Cut12;
+    Cut->EvaluateCPU(FVector3f(0,0,-1),FVector3f(1),UE_PI,false,.05f,4,Cut4);
+    Cut->EvaluateCPU(FVector3f(0,0,-1),FVector3f(1),UE_PI,false,.05f,12,Cut12);
+    TestTrue(TEXT("Early cutoff preserves four-order reference"),FVector3f(Cut4[0]).Equals(FVector3f(SH[3][0]),1.e-5f));
+    TestTrue(TEXT("Cutoff saves work and cannot add energy"),Cut->Paths[11]<Data->Paths[11] && Cut12[0].X<=SH12[0].X && Cut12[0].X>=SH[3][0].X);
     float Limit=100;TestTrue(TEXT("Opaque ceiling blocks upward shadow ray"),Trace(*Data,FVector3f(0,0,.05f),FVector3f(0,0,1),Limit,true)>=0);
     Limit=100;TestTrue(TEXT("Ray parallel to both planes escapes"),Trace(*Data,FVector3f(0,0,.5f),FVector3f(1,0,0),Limit,true)<0);
     FSurfelVolume ProjectionBase;ProjectionBase.GridCounts=FIntVector(2);ProjectionBase.GridMin=FVector3f(0,0,.5f);ProjectionBase.GridMax=FVector3f(1,1,2);
@@ -565,8 +602,14 @@ bool FPRTMultiBouncePhysics::RunTest(const FString&)
     TestFalse(TEXT("Changed geometry rejects cache"),FMultiBounceData::Load(Path,123457,100,Data->BaseCRC).IsValid());
     TestFalse(TEXT("Changed cluster precision rejects cache"),FMultiBounceData::Load(Path,123456,50,Data->BaseCRC).IsValid());
     TestFalse(TEXT("Recaptured base samples reject old companion"),FMultiBounceData::Load(Path,123456,100,Data->BaseCRC+1).IsValid());
+    TestFalse(TEXT("Changed cutoff rejects cache"),FMultiBounceData::Load(Path,123456,100,Data->BaseCRC,.1f).IsValid());
     TArray<uint8> Corrupted;FFileHelper::LoadFileToArray(Corrupted,*Path);Corrupted[Corrupted.Num()/2]^=1;FFileHelper::SaveArrayToFile(Corrupted,*Path);
     TestFalse(TEXT("Corrupted transport rejects cache"),FMultiBounceData::Load(Path,123456,100,Data->BaseCRC).IsValid());
+    Data->Terms.RemoveAll([](const auto& T){return T.Bounce>4;});Data->Ranges[0].Y=Data->Terms.Num();
+    Data->MaxBounces=4;
+    for(int I=4;I<MaxTransportBounces;++I)Data->Paths[I]=0;
+    for(int I=3;I<MaxTransportBounces-1;++I)Data->UnmappedByBounce[I]=0;
+    Data->UnmappedHits=Data->UnmappedByBounce[0]+Data->UnmappedByBounce[1]+Data->UnmappedByBounce[2];
     Data->CacheVersion=4;
     TestTrue(TEXT("Save v4 cache"),Data->Save(Path));
     auto Version4=FMultiBounceData::Load(Path,123456,100,Data->BaseCRC);

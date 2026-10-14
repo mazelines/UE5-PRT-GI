@@ -73,7 +73,8 @@ void ApplyTransportCS(uint3 Group:SV_GroupID,uint Lane:SV_GroupIndex)
     [unroll]for(uint C=0;C<9;++C)Sum[C]=0;
     [loop]for(uint T=Range.x+Lane;T<Range.y;T+=64)
     {
-        if(Terms[T].Bounce>BounceCount)continue;
+        // Terms are sorted by bounce within each probe; each lane can stop.
+        if(Terms[T].Bounce>BounceCount)break;
         float3 L=SourceRadiance[Terms[T].Source].xyz;
         [unroll]for(uint C=0;C<9;++C)
         {

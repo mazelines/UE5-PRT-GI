@@ -2808,7 +2808,8 @@ namespace PRTGI
     {
         if(auto* Variable=IConsoleManager::Get().FindConsoleVariable(TEXT("r.PRTGI.Bounces")))
         {
-            const int32 Count=FMath::Clamp(Variable->GetInt(),1,4)%4+1;
+            const int32 Current=Variable->GetInt();
+            const int32 Count=Current<4?4:Current<8?8:Current<12?12:4;
             Variable->Set(Count,ECVF_SetByConsole);
             if(GEngine)GEngine->AddOnScreenDebugMessage(-1,3,FColor::Cyan,FString::Printf(TEXT("PRT: %d indirect bounces (requires built multi-bounce cache)"),Count));
         }

@@ -16,7 +16,7 @@ FPRTGIEditorCommands::FPRTGIEditorCommands()
 
 void FPRTGIEditorCommands::RegisterCommands()
 {
-    UI_COMMAND(CycleBounces,"PRT Bounce Count","Cycle through 1-4 indirect bounces. Requires a precomputed multi-bounce cache.",
+    UI_COMMAND(CycleBounces,"PRT Bounce Count","Compare 4, 8, and 12 indirect bounces. Requires a precomputed multi-bounce cache.",
         EUserInterfaceActionType::Button,FInputChord(EModifierKey::Control | EModifierKey::Alt,EKeys::G));
     UI_COMMAND(
         ToggleProbes,

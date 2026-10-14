@@ -1,4 +1,4 @@
-"""Read PRTGI v3/v4/v5/v6 transport quality counters without loading Unreal.
+"""Read PRTGI v3-v7 transport quality counters without loading Unreal.
 
 Example:
   python quality_report.py --output baseline.json Content/Precomputed/Volumes
@@ -38,7 +38,7 @@ def read_cache(path):
         if len(data) < 64:
             raise ValueError("Not a transport cache (possibly a Git LFS pointer)")
         magic, version = read("Ii")
-        if magic != 0x34424D50 or version not in (3, 4, 5, 6):
+        if magic != 0x34424D50 or version not in (3, 4, 5, 6, 7):
             raise ValueError(f"Unsupported transport header: {magic:x}, v{version}")
         view = memoryview(data)
         try:
@@ -48,6 +48,7 @@ def read_cache(path):
         if crc != struct.unpack_from("<I", data, len(data) - 4)[0]:
             raise ValueError("Payload CRC mismatch")
         signature, cell_size, probes, base_crc = read("QfiI")
+        max_bounces, min_throughput = read("if") if version >= 7 else (4, 0)
         counts = []
         for _ in range(3):
             count, = read("i")
@@ -55,7 +56,7 @@ def read_cache(path):
             counts.append(count)
         terms, = read("i")
         skip(terms * 64 + probes * 12)
-        paths = read("4i")
+        paths = read("12i" if version >= 7 else "4i")
         missing, hits = read("2i")
         seconds, quantization = read("2d")
         corrected, displacement = read("if")
@@ -63,12 +64,15 @@ def read_cache(path):
         if version >= 4:
             skip(counts[0] // 3 * 16)
             bound, unbound = read("2i")
-            missing_per_bounce = read("3i")
+            missing_per_bounce = read("11i" if version >= 7 else "3i")
         material_hits = read("i")[0] if version >= 5 else None
+        terminated = read("12i") if version >= 7 else None
         if offset != len(data) - 4:
             raise ValueError("Unexpected trailing payload")
         return {
             "path": str(path), "cache_version": version,
+            "max_bounces": max_bounces, "min_throughput": min_throughput,
+            "terminated_low_throughput": terminated,
             "geometry_signature": str(signature), "base_crc": base_crc,
             "cell_size_cm": cell_size, "probes": probes,
             "sources": counts[0] // 3, "triangles": counts[1] // 3,

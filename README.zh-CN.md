@@ -4,13 +4,13 @@
 
 [使用指南 · GitHub Wiki](https://github.com/mazelines/UE5-PRT-GI/wiki)
 
-UE 5.8 的静态场景 Probe GI 插件。包含 Cornell Box 示例、方向光实时重光照、1～4 次间接反弹、独立 Probe Volume 与可视化。
+UE 5.8 的静态场景 Probe GI 插件。包含 Cornell Box 示例、方向光实时重光照、1～12 次间接反弹、独立 Probe Volume 与可视化。
 
 ![PRT GI Cornell Box showcase](Plugins/PRTGI/docs/images/prt-gi-showcase.png)
 
 ## 安装
 
-通过 Git 获取此插件时需要 **Git LFS**：预计算缓存使用 LFS 保存。克隆后在仓库目录运行 `git lfs install --local` 和 `git lfs pull`，确保 `.surfels` / `.multi` 是实际二进制文件，而不是 LFS pointer 文本。仓库现在包含宿主项目 `UE_PRT_GI.uproject`，插件位于 `Plugins/PRTGI`。`ue6` 分支的项目 Target 使用 `Unreal6_0`；下文的 UE 5.8 验证记录针对原始插件，不代表此宿主项目已通过验证。
+预计算缓存（`.prtgi`、`.surfels`、`.surfels.multi`）在本地生成，不提交到 Git。首次克隆后，需要为所有参与的 Volume 执行 **Build Precomputation** 才能使用 PRT 光照。仓库现在包含宿主项目 `UE_PRT_GI.uproject`，插件位于 `Plugins/PRTGI`。`ue6` 分支的项目 Target 使用 `Unreal6_0`；下文的 UE 5.8 验证记录针对原始插件，不代表此宿主项目已通过验证。
 
 1. 使用随附宿主项目时，打开 `UE_PRT_GI.uproject`。安装到其他项目时，将本仓库的 `Plugins/PRTGI` 目录复制到 `YourProject/Plugins/PRTGI`，确保目录内直接包含 `PRTGI.uplugin`，不要额外嵌套一层仓库目录。
 2. 使用与宿主项目匹配的 UE 和 C++ 工具链编译 **Editor target**。Blueprint 项目也需要能够编译此 C++ 插件的环境，必要时先添加一个 C++ 类以生成项目 target。
@@ -36,13 +36,13 @@ UE 5.8 的静态场景 Probe GI 插件。包含 Cornell Box 示例、方向光�
 
 示例使用同一盏 UE DirectionalLight；各盒子的原面光源区域已替换为开口，正面保留观察开口。
 
-| Volume | 随附缓存 |
+| Volume | 本地验证设置与结果 |
 |---|---|
-| PRT_Global、PRT_ClassicBox、PRT_ColorBox、PRT_InvertedBox | 已构建 1～4 次间接反弹数据，运行时默认 4 次 |
+| PRT_Global、PRT_ClassicBox、PRT_ColorBox、PRT_InvertedBox | 已构建 1～12 次间接反弹数据，运行时默认 4 次 |
 | PRT_ShinyBox | 已按每面 16×16 构建；878 个受检 Probe 中排除 21 个，带采集警告 |
 | PRT_MetallicBox | 已按每面 16×16 构建，保持 40 cm Probe 间距与 2 cm 表面聚合尺寸；2,212 个受检 Probe 中排除 77 个，带采集警告 |
 
-如果下载版本未附大型缓存文件，请先执行 Build Precomputation，再进行效果比较。
+仓库不附带缓存。请选择示例中的六个 `PRTProbeVolume` 并执行 **Build Precomputation**，完成后再比较光照。打包可运行项目时，仍需包含本地生成的缓存。
 
 ## 在自己的场景中添加 Probe Volume
 
@@ -82,13 +82,13 @@ Volume 当前为**轴对齐**体积，不支持旋转；每轴最多 32 个 Prob
 - 选中一个或多个 Volume，点击 **Build Precomputation** 将其加入构建队列；使用 **Cancel Build** 取消选中 Volume 的构建。
 - **PRT → Build** 中的**Build Progress**（构建总进度）覆盖几何采集、传输计算和保存，**Build Stage**（构建阶段）说明当前工作；两者与构建按钮放在一起。已有有效几何缓存时会复用，可能只执行传输阶段。进度按阶段分配，不代表剩余时间估计。
 - 当前构建结合 UE 场景采集与 CPU 传输预计算，运行时默认 GPU 重光照；整个 Build 不是纯 GPU 烘焙。
-- 构建保存供 1～4 次间接反弹切换使用的数据。运行时切换已有反弹次数无需重新采集，默认使用 4 次。
+- 构建保存供 1～12 次间接反弹切换使用的数据。运行时切换已有反弹次数无需重新采集，默认使用 4 次。
 - 用时取决于 Probe 数量、采集分辨率、几何复杂度、表面聚合尺寸及硬件。先构建小体积验证，再扩大范围。
 - 静态几何、材质、网格布局或采集参数改变后需要重新构建。复制 Volume 会生成新 GUID，新副本需要自己的缓存。
 
 几何校验异常或空采集的 Probe 会从传输与插值中排除。排除数不超过受检 Probe 的 5%，且剩余数据通过校验时，可以带警告完成构建；更大范围的异常会使构建失败。使用结果前检查**Build Warnings**（构建警告）、**Invalid Probes** 与受影响区域。采集校验使用 **Visibility** 通道的碰撞查询，因此参与几何需要与渲染表面匹配、且阻挡该通道的碰撞。
 
-每个 Volume 的传输项上限为 **1,600 万项**，每项 64 bytes，最多约 **976.6 MiB** 传输数据；文件加载上限另留 128 MiB 存放几何索引等数据。这不是总内存预算，构建临时副本、CPU 缓存和 GPU 缓冲还会占用额外内存。不会因接近上限自动降低采集分辨率。
+每个 Volume 的传输项上限为 **2,400 万项**，每项 64 bytes，最多约 **1464.8 MiB** 传输数据；文件加载上限另留 384 MiB 存放几何索引等数据。这不是总内存预算，构建临时副本、CPU 缓存和 GPU 缓冲还会占用额外内存。不会因接近上限自动降低采集分辨率。
 
 ## 内容目录
 
@@ -122,7 +122,7 @@ Volume 当前为**轴对齐**体积，不支持旋转；每轴最多 32 个 Prob
 | Ctrl+Alt+3 | Lumen GI |
 | Ctrl+Alt+4 | 切换 PRT 仅间接漫反射 / 完整画面 |
 | Ctrl+Alt+P | 显示 / 隐藏 Probe；位置或光照球由 Volume Display Mode 决定 |
-| Ctrl+Alt+G | 循环切换 1～4 次间接反弹，需要对应缓存 |
+| Ctrl+Alt+G | 循环切换 4 / 8 / 12 次间接反弹，需要对应缓存 |
 | Ctrl+Alt+[ / ] | DirectionalLight Yaw 减 / 加 5°（默认步长） |
 | Ctrl+Alt+Shift+[ / ] | DirectionalLight Pitch 减 / 加 5°（默认步长） |
 | Ctrl+Alt+B | 旧版全局烘焙入口，不会构建 Actor Volumes |
@@ -142,3 +142,5 @@ PRTGI.Status
 ```
 
 `PRTGI.SetMode Offline` 是历史命令名称，表示退出动态 GI；它不会自动生成离线光照或 Path Tracing 参考图。
+
+新的 v7 缓存最多预计算 12 次反弹。`Transport Min Throughput` 默认 0.01：保留前四阶，之后在累计 RGB 吞吐量最大值低于阈值时提前终止路径；0 关闭此截断。修改阈值需要重新构建。该有偏近似不保证 1% 图像误差。旧 v3–v6 缓存仍可读取，但最多使用 4 次反弹。详细比较见 [English README](README.md#comparing-4-8-and-12-bounces)。

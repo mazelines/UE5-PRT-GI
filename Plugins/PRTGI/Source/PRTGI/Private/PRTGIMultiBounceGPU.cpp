@@ -103,7 +103,7 @@ void FMultiBounceGPU::Submit(TSharedPtr<FMultiBounceData,ESPMode::ThreadSafe> Da
         FComputeShaderUtils::AddPass(Graph,RDG_EVENT_NAME("PRT Multi Direct Lighting"),ShadeShader,Shade,FIntVector(FMath::DivideAndRoundUp(Shade->SourceCount,64u),1,1));
         auto* Apply=Graph.AllocParameters<FPRTApplyTransportCS::FParameters>();
         Apply->Terms=Graph.CreateSRV(Graph.RegisterExternalBuffer(S->Terms));Apply->Ranges=Graph.CreateSRV(Graph.RegisterExternalBuffer(S->Ranges));
-        Apply->SourceRadiance=Graph.CreateSRV(Sources);Apply->OutSH=Graph.CreateUAV(Output);Apply->BounceCount=FMath::Clamp(Bounces,1,4);
+        Apply->SourceRadiance=Graph.CreateSRV(Sources);Apply->OutSH=Graph.CreateUAV(Output);Apply->BounceCount=FMath::Clamp(Bounces,1,Data->MaxBounces);
         TShaderMapRef<FPRTApplyTransportCS> ApplyShader(GetGlobalShaderMap(GMaxRHIFeatureLevel));
         FComputeShaderUtils::AddPass(Graph,RDG_EVENT_NAME("PRT Multi Precomputed Transport"),ApplyShader,Apply,FIntVector(Data->ProbeCount,1,1));
         auto Publication=MakeShared<FPRTGIGPUCoefficients,ESPMode::ThreadSafe>();

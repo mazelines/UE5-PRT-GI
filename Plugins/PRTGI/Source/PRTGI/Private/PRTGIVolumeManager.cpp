@@ -15,7 +15,7 @@
 #include "Misc/FileHelper.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogPRTVolume, Log, All);
-static TAutoConsoleVariable<int32> CVarPRTBounces(TEXT("r.PRTGI.Bounces"),4,TEXT("Indirect bounces 1..4 (default 4); requires a built multi-bounce companion cache."),ECVF_Default);
+static TAutoConsoleVariable<int32> CVarPRTBounces(TEXT("r.PRTGI.Bounces"),4,TEXT("Indirect bounces 1..12 (default 4); compare 4, 8, 12. Legacy caches cap at four until rebuilt."),ECVF_Default);
 static TAutoConsoleVariable<int32> CVarPRTMultiGPU(TEXT("r.PRTGI.MultiBounceGPU"),1,TEXT("Use precomputed path transport and GPU lighting. 0: legacy CPU one-bounce reference."),ECVF_Default);
 static TAutoConsoleVariable<int32> CVarPRTNearClipSafety(TEXT("r.PRTGI.ProbeNearClipSafety"),1,TEXT("Reject probes whose capture near-clip cube intersects cached geometry. 0: diagnostic comparison."),ECVF_Default);
 static TAutoConsoleVariable<int32> CVarPRTGPUReadback(TEXT("r.PRTGI.GPUReadback"),0,TEXT("Read GPU coefficients back for numeric diagnostics. Normal rendering keeps coefficients on GPU; showing probes also enables readback."),ECVF_Default);
@@ -45,6 +45,7 @@ struct FPRTGIVolumeManager::FState
     int32 PendingBounces=0;
     int32 PublishedBounces=0;
     float MultiCell=0;
+    float MultiMinThroughput=-1;
     bool bBuildIncludesCapture=false;
 };
 
@@ -82,7 +83,9 @@ FString FPRTGIVolumeManager::ValidateMultiBounce()
         const FVector3f Sun(-LC->GetDirection()),Color(C.R,C.G,C.B);
         const float Lux=LC->IsVisible()&&LC->bAffectsWorld?LC->Intensity*LC->DiffuseScale*LC->IndirectLightingIntensity:0;
         const float Bias=FMath::Clamp(GetDefault<UPRTGISettings>()->SurfelShadowBiasCm,.001f,1.f);
-        TArray<FVector4f> CPU[4],Legacy,Unclustered;for(int B=1;B<=4;++B)S->Multi->EvaluateCPU(Sun,Color,Lux,LC->CastShadows,Bias,B,CPU[B-1]);
+        const int32 Orders[4]={1,4,FMath::Min(8,S->Multi->MaxBounces),FMath::Min(12,S->Multi->MaxBounces)};
+        TArray<FVector4f> CPU[4],Legacy,Unclustered;
+        for(int I=0;I<4;++I)S->Multi->EvaluateCPU(Sun,Color,Lux,LC->CastShadows,Bias,Orders[I],CPU[I]);
         S->Multi->EvaluateUnclusteredCPU(*S->Surfels,Sun,Color,Lux,LC->CastShadows,Bias,Unclustered,FPaths::ProjectSavedDir()/TEXT("PRTMultiBounce/bvh_visibility.csv"));
         auto Error=[](const auto& A,const auto& B)->double
         {if(A.Num()!=B.Num())return -1;double Delta=0,Energy=0;for(int I=0;I<A.Num();++I){Delta+=FVector3f(A[I]-B[I]).SizeSquared();Energy+=FVector3f(B[I]).SizeSquared();}return FMath::Sqrt(Delta/FMath::Max(Energy,1.e-20));};
@@ -92,11 +95,12 @@ FString FPRTGIVolumeManager::ValidateMultiBounce()
             const FVector3f E(CPU[B][P*9]);Energy[B]+=E.X+E.Y+E.Z;
             if(B>0 && (E-FVector3f(CPU[B-1][P*9])).GetMin()<-1.e-3f)Monotonic=false;
         }
-        const int Count=FMath::Clamp(S->PublishedBounces,1,4);
+        int Count=INDEX_NONE;for(int I=0;I<4;++I)if(Orders[I]==S->PublishedBounces)Count=I;
+        TArray<FVector4f> Other;if(Count==INDEX_NONE)S->Multi->EvaluateCPU(Sun,Color,Lux,LC->CastShadows,Bias,S->PublishedBounces,Other);
         if(!First)Report+=TEXT(",");First=false;
-        Report+=FString::Printf(TEXT("{\"actor\":\"%s\",\"effective_bounces\":%d,\"gpu_cpu_relative_error\":%.9g,\"cluster_one_bounce_relative_error\":%.9g,\"monotonic_l0\":%s,\"l0_energy\":[%.9g,%.9g,%.9g,%.9g],\"sources\":%d,\"terms\":%d,\"unmapped_hits\":%d,\"surface_hits\":%d,\"build_seconds\":%.6f,\"clustering_only_relative_error\":%.9g,\"bvh_vs_collision_relative_error\":%.9g,\"fp16_weight_relative_error\":%.9g,\"transport_mb\":%.3f}"),
-            *S->Actor->GetName(),S->PublishedBounces,Error(S->Render.Coefficients,CPU[Count-1]),Error(CPU[0],Legacy),Monotonic?TEXT("true"):TEXT("false"),
-            Energy[0],Energy[1],Energy[2],Energy[3],S->Multi->Surfaces.Num()/3,S->Multi->Terms.Num(),S->Multi->UnmappedHits,S->Multi->SurfaceHits,S->Multi->BuildSeconds,
+        Report+=FString::Printf(TEXT("{\"actor\":\"%s\",\"effective_bounces\":%d,\"gpu_cpu_relative_error\":%.9g,\"cluster_one_bounce_relative_error\":%.9g,\"monotonic_l0\":%s,\"bounce_counts\":[1,4,%d,%d],\"l0_energy\":[%.9g,%.9g,%.9g,%.9g],\"sources\":%d,\"terms\":%d,\"unmapped_hits\":%d,\"surface_hits\":%d,\"build_seconds\":%.6f,\"clustering_only_relative_error\":%.9g,\"bvh_vs_collision_relative_error\":%.9g,\"fp16_weight_relative_error\":%.9g,\"transport_mb\":%.3f}"),
+            *S->Actor->GetName(),S->PublishedBounces,Error(S->Render.Coefficients,Count==INDEX_NONE?Other:CPU[Count]),Error(CPU[0],Legacy),Monotonic?TEXT("true"):TEXT("false"),
+            Orders[2],Orders[3],Energy[0],Energy[1],Energy[2],Energy[3],S->Multi->Surfaces.Num()/3,S->Multi->Terms.Num(),S->Multi->UnmappedHits,S->Multi->SurfaceHits,S->Multi->BuildSeconds,
             Error(CPU[0],Unclustered),Error(Unclustered,Legacy),S->Multi->QuantizationRelativeError,double(S->Multi->Terms.Num())*64/1048576);
     }
     Report+=TEXT("]}");FFileHelper::SaveStringToFile(Report,*(FPaths::ProjectSavedDir()/TEXT("PRTMultiBounceValidation.json")));return Report;
@@ -165,7 +169,7 @@ bool FPRTGIVolumeManager::Tick(UWorld* World, ADirectionalLight* Light, int32 Sh
     const float Lux = LC && LC->IsVisible() && LC->bAffectsWorld
         ? FMath::Max(0.f,LC->Intensity * LC->DiffuseScale * LC->IndirectLightingIntensity) : 0;
     const float Bias = FMath::Clamp(GetDefault<UPRTGISettings>()->SurfelShadowBiasCm, .001f, 1.f);
-    const int32 RequestedBounces=FMath::Clamp(CVarPRTBounces.GetValueOnGameThread(),1,4);
+    const int32 RequestedBounces=FMath::Clamp(CVarPRTBounces.GetValueOnGameThread(),1,PRTGI::MaxTransportBounces);
     const bool UseGPU=CVarPRTMultiGPU.GetValueOnGameThread()!=0;
     const bool Resident=CVarPRTGPUResident.GetValueOnGameThread()!=0;
     const bool Readback=!Resident || CVarPRTGPUReadback.GetValueOnGameThread()!=0 || ShowProbes!=0;
@@ -183,15 +187,16 @@ bool FPRTGIVolumeManager::Tick(UWorld* World, ADirectionalLight* Light, int32 Sh
             States.Add(MoveTemp(State)); Found = &States.Last(); bDirty = true;
         }
         FState& S = **Found;
-        if(S.MultiCell!=Actor->TransportCellSize)
+        if(S.MultiCell!=Actor->TransportCellSize || S.MultiMinThroughput!=Actor->TransportMinThroughput)
         {
-            CancelBuild(Actor);S.Multi.Reset();S.GPU.Reset();S.LastLight.Reset();S.MultiCell=Actor->TransportCellSize;
+            CancelBuild(Actor);S.Multi.Reset();S.GPU.Reset();S.LastLight.Reset();S.MultiCell=Actor->TransportCellSize;S.MultiMinThroughput=Actor->TransportMinThroughput;
             S.GeometrySignature=0;
         }
         FBox Grid, Receiver; FIntVector Counts; FString Error;
         const bool DuplicateId = Actors.ContainsByPredicate([&](const auto* Other) { return Other != Actor && Other->VolumeId == Actor->VolumeId; });
         if (!Actor->bEnabled || DuplicateId || !Actor->GetLayout(Grid, Receiver, Counts, Error)
-            || !FMath::IsFinite(Actor->TransportCellSize) || Actor->TransportCellSize<1 || Actor->TransportCellSize>100)
+            || !FMath::IsFinite(Actor->TransportCellSize) || Actor->TransportCellSize<1 || Actor->TransportCellSize>100
+            || !FMath::IsFinite(Actor->TransportMinThroughput) || Actor->TransportMinThroughput<0 || Actor->TransportMinThroughput>.25f)
         {
             CancelBuild(Actor);
             Actor->CacheStatus = DuplicateId ? TEXT("Duplicate VolumeId; duplicate using the editor to assign a new ID")
@@ -241,7 +246,7 @@ bool FPRTGIVolumeManager::Tick(UWorld* World, ADirectionalLight* Light, int32 Sh
                 }
                 if (BakeActor.Get() == Actor && Bake && Bake->SceneSignature != GeometrySig) CancelBuild(Actor);
                 S.GeometrySignature = GeometrySig; S.MatrixSignature = MatrixSig; bDirty = true; S.bVisualDirty = true;
-                if(S.Surfels)S.Multi=PRTGI::FMultiBounceData::Load(Actor->CacheFile+TEXT(".multi"),GeometrySig,Actor->TransportCellSize,PRTGI::MultiBounceBaseCRC(*S.Surfels));
+                if(S.Surfels)S.Multi=PRTGI::FMultiBounceData::Load(Actor->CacheFile+TEXT(".multi"),GeometrySig,Actor->TransportCellSize,PRTGI::MultiBounceBaseCRC(*S.Surfels),Actor->TransportMinThroughput);
                 S.Render.Visibility=S.Surfels?FPRTGIProbeVisibility::Build(*S.Surfels):nullptr;
                 if(S.Surfels && S.Multi)
                 {
@@ -251,7 +256,7 @@ bool FPRTGIVolumeManager::Tick(UWorld* World, ADirectionalLight* Light, int32 Sh
                 if(!Queue.Contains(Actor) && BakeActor.Get()!=Actor)
                 {
                     Actor->BuildProgress=S.Multi?1.f:0.f;
-                    Actor->BuildStage=S.Multi?TEXT("Complete: 1-4 bounce cache ready"):
+                    Actor->BuildStage=S.Multi?FString::Printf(TEXT("Complete: 1-%d bounce cache ready"),S.Multi->MaxBounces):
                         S.Surfels?TEXT("Geometry cache reusable; awaiting multi-bounce build"):TEXT("No valid multi-bounce cache; build required");
                 }
                 Actor->CacheStatus = S.Surfels ? TEXT("Ready: one-bounce Surfel cache") : S.Matrix ? TEXT("Ready: imported directional matrix")
@@ -271,10 +276,10 @@ bool FPRTGIVolumeManager::Tick(UWorld* World, ADirectionalLight* Light, int32 Sh
             const int32 Completed=S.MultiJob->CompletedProbes.Load(),Total=Counts.X*Counts.Y*Counts.Z;
             const float Fraction=FMath::Clamp(float(Completed)/Total,0.f,1.f);
             Actor->BuildProgress=S.bBuildIncludesCapture?.5f+.48f*Fraction:.98f*Fraction;
-            Actor->BuildStage=FString::Printf(TEXT("Stage %s: precomputing 1-4 bounces - %d%% (%d/%d probes)%s"),
+            Actor->BuildStage=FString::Printf(TEXT("Stage %s: precomputing 1-12 bounces - %d%% (%d/%d probes)%s"),
                 S.bBuildIncludesCapture?TEXT("2/2"):TEXT("1/1"),FMath::RoundToInt(Fraction*100),Completed,Total,
                 Completed==0?TEXT("; preparing surface data"):S.bBuildIncludesCapture?TEXT(""):TEXT("; geometry reused"));
-            Actor->CacheStatus=TEXT("Building static 1..4 bounce paths (CPU worker)");
+            Actor->CacheStatus=TEXT("Building static 1..12 bounce paths (CPU worker)");
             if(S.MultiJob->Future.IsReady())
             {
                 auto Result=S.MultiJob->Future.Get();S.MultiJob.Reset();
@@ -282,7 +287,7 @@ bool FPRTGIVolumeManager::Tick(UWorld* World, ADirectionalLight* Light, int32 Sh
                 if(Result && Result->Error.IsEmpty() && Result->Signature==Current)
                 {Actor->BuildProgress=.99f;Actor->BuildStage=TEXT("Validating and saving transport cache");}
                 if(Result && Result->Error.IsEmpty() && Result->Signature==Current && Result->Save(Actor->CacheFile+TEXT(".multi")))
-                {S.Multi=Result;S.NearClipMask=FPRTGIProbeVisibility::BuildNearClipMask(*S.Surfels,*S.Multi);S.GPU.Reset();S.LastLight.Reset();Actor->BuildProgress=1;Actor->BuildStage=TEXT("Complete: 1-4 bounce cache saved");Actor->CacheStatus=TEXT("Ready: precomputed 1..4 bounce paths");}
+                {S.Multi=Result;S.NearClipMask=FPRTGIProbeVisibility::BuildNearClipMask(*S.Surfels,*S.Multi);S.GPU.Reset();S.LastLight.Reset();Actor->BuildProgress=1;Actor->BuildStage=TEXT("Complete: 1-12 bounce cache saved");Actor->CacheStatus=TEXT("Ready: precomputed 1..12 bounce paths");}
                 else
                 {
                     const FString Reason=!Result?TEXT("No worker result"):!Result->Error.IsEmpty()?Result->Error:
@@ -323,11 +328,11 @@ bool FPRTGIVolumeManager::Tick(UWorld* World, ADirectionalLight* Light, int32 Sh
                 if(S.Multi && UseGPU)
                 {
                     if(!S.GPU)S.GPU=MakeUnique<PRTGI::FMultiBounceGPU>();
-                    if(!S.GPU->IsPending()){S.PendingLight=LightKey;S.PendingBounces=RequestedBounces;S.GPU->Submit(S.Multi,TowardSun,Color,Lux,LC->CastShadows,Bias,RequestedBounces,Readback);}
+                    if(!S.GPU->IsPending()){S.PendingLight=LightKey;S.PendingBounces=FMath::Min(RequestedBounces,S.Multi->MaxBounces);S.GPU->Submit(S.Multi,TowardSun,Color,Lux,LC->CastShadows,Bias,S.PendingBounces,Readback);}
                 }
                 else {S.Render.GPUCoefficients.Reset();S.Render.bCPUReferenceReady=true;Success = S.Surfels->Relight(World,TowardSun,Color,Lux,LC->CastShadows,Bias,S.Render.Coefficients);
                     S.PublishedBounces=1;
-                    if(!S.MultiJob)Actor->CacheStatus=RequestedBounces>1?TEXT("One bounce fallback: Build Precomputation for 2..4"):TEXT("Ready: CPU one bounce");}
+                    if(!S.MultiJob)Actor->CacheStatus=RequestedBounces>1?TEXT("One bounce fallback: Build Precomputation for up to 12 bounces"):TEXT("Ready: CPU one bounce");}
                 S.Validity = S.Surfels->Validity;
             }
             else
@@ -376,6 +381,8 @@ bool FPRTGIVolumeManager::Tick(UWorld* World, ADirectionalLight* Light, int32 Sh
         Actor->ValidProbes = S.Validity.Num() - Actor->InvalidProbes;
         Actor->bGIActive=bPRTActive && !S.Render.Coefficients.IsEmpty();
         Actor->EffectiveBounces=Actor->bGIActive?S.PublishedBounces:0;
+        if(S.Multi && RequestedBounces>S.Multi->MaxBounces && !S.MultiJob && Actor->CacheStatus.StartsWith(TEXT("Ready:")) && !Actor->CacheStatus.Contains(TEXT("cache capped")))
+            Actor->CacheStatus+=FString::Printf(TEXT("; cache capped at %d, rebuild for %d"),S.Multi->MaxBounces,RequestedBounces);
         const bool Show = bPRTActive && ShowProbes != 0 && (ShowProbes != 2 || Actor->Priority > 0) && (ShowProbes != 3 || Actor->Priority <= 0);
         const int32 DisplayKey = Show ? int32(Actor->DisplayMode) : -1;
         if (S.bVisualDirty || DisplayKey != S.LastDisplay || S.LastRadius != Actor->ProbeRadius)
@@ -394,9 +401,9 @@ bool FPRTGIVolumeManager::Tick(UWorld* World, ADirectionalLight* Light, int32 Sh
             if((*S)->Surfels)
             {
                 (*S)->bBuildIncludesCapture=false;
-                Actor->BuildProgress=0;Actor->BuildStage=TEXT("Stage 1/1: preparing 1-4 bounce precomputation (geometry cache reused)");
-                (*S)->MultiJob=PRTGI::BuildMultiBounce(World,(*S)->Surfels,Actor->TransportCellSize);
-                Actor->CacheStatus=TEXT("Building static 1..4 bounce paths; reusing geometry");
+                Actor->BuildProgress=0;Actor->BuildStage=TEXT("Stage 1/1: preparing 1-12 bounce precomputation (geometry cache reused)");
+                (*S)->MultiJob=PRTGI::BuildMultiBounce(World,(*S)->Surfels,Actor->TransportCellSize,Actor->TransportMinThroughput);
+                Actor->CacheStatus=TEXT("Building static 1..12 bounce paths; reusing geometry");
             }
             else
             {
@@ -436,8 +443,8 @@ bool FPRTGIVolumeManager::Tick(UWorld* World, ADirectionalLight* Light, int32 Sh
                     (*State)->bVisualDirty=true; Actor->CacheStatus=TEXT("Ready: one-bounce Surfel cache");
                     (*State)->Multi.Reset();(*State)->GPU.Reset();(*State)->NearClipMask.Reset();
                     (*State)->bBuildIncludesCapture=true;
-                    Actor->BuildProgress=.5f;Actor->BuildStage=TEXT("Stage 2/2: preparing 1-4 bounce precomputation (geometry capture complete)");
-                    (*State)->MultiJob=PRTGI::BuildMultiBounce(World,Bake,Actor->TransportCellSize);
+                    Actor->BuildProgress=.5f;Actor->BuildStage=TEXT("Stage 2/2: preparing 1-12 bounce precomputation (geometry capture complete)");
+                    (*State)->MultiJob=PRTGI::BuildMultiBounce(World,Bake,Actor->TransportCellSize,Actor->TransportMinThroughput);
                     UE_LOG(LogPRTVolume,Display,TEXT("Build complete: %s probes=%d samples=%d file=%s"),*Actor->GetName(),Bake->Validity.Num(),Bake->Samples.Num(),*Actor->GetCachePath());
                     bDirty=true;
                 }

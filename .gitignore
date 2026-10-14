@@ -1,8 +1,17 @@
-# Unreal local build products; keep Content assets and precomputation caches.
+# Unreal local build products; keep authored Content assets.
 Binaries/
 Intermediate/
 DerivedDataCache/
 Saved/
+
+# PRT precomputation is generated locally with Build Precomputation.
+Plugins/PRTGI/Content/Precomputed/
+Content/PRTGI/Volumes/
+*.prtgi
+*.surfels
+*.surfels.multi
+*.surfels.tmp
+*.surfels.multi.tmp
 
 # Compiled artifacts outside the usual build directories.
 *.dll
