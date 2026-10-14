@@ -31,4 +31,4 @@
 
 ## README
 
-[한국어](https://github.com/mazelines/UE5-PRT-GI/blob/ue6/README.ko.md) · [English](https://github.com/mazelines/UE5-PRT-GI/blob/ue6/README.md) · [简体中文](https://github.com/mazelines/UE5-PRT-GI/blob/ue6/README.zh-CN.md)
+[한국어](https://github.com/mazelines/UE5-PRT-GI/blob/ue6/README.md) · [English](https://github.com/mazelines/UE5-PRT-GI/blob/ue6/README.en.md) · [简体中文](https://github.com/mazelines/UE5-PRT-GI/blob/ue6/README.zh-CN.md)

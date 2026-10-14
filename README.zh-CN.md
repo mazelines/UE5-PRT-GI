@@ -1,6 +1,6 @@
 # PRTGI — Unreal Engine 6
 
-[English](README.md) | [한국어](README.ko.md) | **简体中文**
+[한국어](README.md) | [English](README.en.md) | **简体中文**
 
 [使用指南 · GitHub Wiki](https://github.com/mazelines/UE5-PRT-GI/wiki)
 
@@ -146,4 +146,4 @@ PRTGI.Status
 
 `PRTGI.SetMode Offline` 是历史命令名称，表示退出动态 GI；它不会自动生成离线光照或 Path Tracing 参考图。
 
-新的 v7 缓存最多预计算 12 次反弹。`Transport Min Throughput` 默认 0.01：保留前四阶，之后在累计 RGB 吞吐量最大值低于阈值时提前终止路径；0 关闭此截断。修改阈值需要重新构建。该有偏近似不保证 1% 图像误差。旧 v3–v6 缓存仍可读取，但最多使用 4 次反弹。详细比较见 [English README](README.md#comparing-4-8-and-12-bounces)。
+新的 v7 缓存最多预计算 12 次反弹。`Transport Min Throughput` 默认 0.01：保留前四阶，之后在累计 RGB 吞吐量最大值低于阈值时提前终止路径；0 关闭此截断。修改阈值需要重新构建。该有偏近似不保证 1% 图像误差。旧 v3–v6 缓存仍可读取，但最多使用 4 次反弹。详细比较见 [English README](README.en.md#comparing-4-8-and-12-bounces)。

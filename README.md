@@ -1,138 +1,138 @@
-# PRTGI for Unreal Engine 6
+# PRTGI — Unreal Engine 6
 
-**English** | [한국어](README.ko.md) | [简体中文](README.zh-CN.md)
+**한국어** | [English](README.en.md) | [简体中文](README.zh-CN.md)
 
-[User guide · GitHub Wiki](https://github.com/mazelines/UE5-PRT-GI/wiki)
+[사용자 가이드 · GitHub Wiki](https://github.com/mazelines/UE5-PRT-GI/wiki)
 
-This `ue6` branch contains a probe-based global illumination plugin and host project for static scenes in **Unreal Engine 6.0**. Includes a Cornell Box showcase, real-time directional light relighting, 1–12 indirect bounces, independent Probe Volumes, and visualization.
+`ue6` 브랜치는 **Unreal Engine 6.0**의 정적 장면을 위한 프로브 기반 전역 조명(GI) 플러그인과 실행용 프로젝트를 제공합니다. Cornell Box 예제, 방향광 변화에 따른 실시간 조명 갱신, 1~12회 간접광 반사, 독립적인 프로브 볼륨과 시각화 기능을 제공합니다.
 
-![PRT GI Cornell Box showcase](Plugins/PRTGI/docs/images/prt-gi-showcase.png)
+![PRT GI Cornell Box 예제](Plugins/PRTGI/docs/images/prt-gi-showcase.png)
 
-## Installation
+## 설치
 
-> **First run: manually build the precomputation cache.** Precomputed `.prtgi`, `.surfels` and `.surfels.multi` caches are **not included in Git**. Open the project in the UE6 Editor, load `PRTGI_Showcase`, select all six `PRTProbeVolume` actors, then run **Details → PRT → Build → Build Precomputation**. Wait for every volume to finish before comparing PRT lighting. **Compiling the C++ project or simply opening it does not generate these caches.** Other levels also require local precomputation for each participating volume.
+이 저장소는 실행용 프로젝트 `UE_PRT_GI.uproject`와 `Plugins/PRTGI`에 있는 플러그인으로 구성됩니다. Game·Editor 타깃 모두 `BuildSettingsVersion.V9`와 `EngineIncludeOrderVersion.Unreal6_0`을 사용합니다. 이 브랜치는 **UE 6.0, Windows / Win64, Development Editor, DX12 / SM6, 디퍼드 렌더링** 환경에서 빌드와 에디터 검증을 마쳤습니다. 측정 조건과 결과는 [바운스 검증 보고서](Plugins/PRTGI/Tools/validation_bounces.json)에 있습니다.
 
-The repository now contains the `UE_PRT_GI.uproject` host project, with the plugin under `Plugins/PRTGI`. Both Game and Editor targets use `BuildSettingsVersion.V9` and `EngineIncludeOrderVersion.Unreal6_0`. This branch has been built and tested in the UE6 Editor; the [bounce validation report](Plugins/PRTGI/Tools/validation_bounces.json) records the measured conditions and results.
+> **첫 실행 시 직접 프리빌드해야 합니다.** 사전 계산 캐시(`.prtgi`, `.surfels`, `.surfels.multi`)는 Git 저장소에 포함하지 않습니다. 프로젝트를 UE6 에디터로 열고 `PRTGI_Showcase` 레벨에서 `PRTProbeVolume` 여섯 개를 선택한 뒤, **Details → PRT → Build → Build Precomputation**을 실행하세요. 모든 볼륨의 계산이 완료되어야 PRT 조명을 비교할 수 있습니다. **C++ 프로젝트를 빌드하거나 프로젝트를 여는 것만으로는 캐시가 생성되지 않습니다.** 다른 레벨에서도 참여하는 볼륨을 직접 사전 계산해야 합니다.
 
-1. To use the bundled host project, associate `UE_PRT_GI.uproject` with your local **UE 6.0** installation, then open it. The checked-in engine association identifies the development machine’s engine installation. To install the plugin in another project, copy this repository's `Plugins/PRTGI` directory to `YourProject/Plugins/PRTGI`. This directory must directly contain `PRTGI.uplugin`, without an extra nested repository folder.
-2. Build the **UE_PRT_GIEditor** target with **UE 6.0**, **Win64**, and **Development Editor**. When installing the plugin in another project, build that project’s Editor target with UE6. Blueprint projects also need an environment capable of compiling this C++ plugin; add a C++ class first if needed to generate a project target.
-3. In **Edit → Plugins**, search for **PRT** (the current display name is **UE5-PRT-GI**), enable it, and restart the Editor when prompted.
+1. 포함된 프로젝트를 사용하려면 `UE_PRT_GI.uproject`를 로컬에 설치한 **UE 6.0**에 연결한 뒤 엽니다. 저장소의 엔진 연결 ID는 개발 PC의 설치 경로에 대응하므로 다른 PC에서는 엔진 연결을 다시 지정하세요. 다른 프로젝트에 설치하려면 이 저장소의 `Plugins/PRTGI` 폴더를 `YourProject/Plugins/PRTGI`로 복사합니다. 해당 폴더 바로 아래에 `PRTGI.uplugin`이 있어야 합니다.
+2. **UE 6.0**에서 **UE_PRT_GIEditor** 타깃을 **Win64 / Development Editor**로 빌드합니다. 다른 프로젝트에 설치했다면 해당 프로젝트의 Editor 타깃을 UE6로 빌드합니다. 블루프린트 프로젝트도 이 C++ 플러그인을 컴파일할 환경이 필요합니다. 필요한 경우 C++ 클래스를 추가해 프로젝트 타깃을 생성합니다.
+3. **Edit → Plugins**에서 **PRT**를 검색해 활성화하고(현재 표시 이름은 **UE5-PRT-GI**), 안내에 따라 에디터를 다시 시작합니다.
 
-This branch is validated in **Unreal Engine 6.0, Windows / Win64, Development Editor, DX12 / SM6**, using deferred rendering. The GI pass requires the GBuffer; Forward Shading is not supported by this path. The plugin references internal Renderer interfaces, so other UE versions and platforms require recompilation and validation. Precompiled DLLs are not guaranteed to be compatible across Engine builds. The current implementation does not require additional Engine source modifications to install the plugin.
+GI 패스는 GBuffer를 사용하므로 현재 방식은 Forward Shading을 지원하지 않습니다. 플러그인이 Renderer 내부 인터페이스를 참조하므로 다른 엔진 버전이나 플랫폼에서는 다시 컴파일하고 검증해야 합니다. 사전 컴파일된 DLL은 엔진 빌드 간 호환을 보장하지 않습니다. 기존 구현은 설치를 위한 별도의 엔진 소스 수정을 요구하지 않습니다.
 
-## Quick Start
+## 빠른 시작
 
-1. Enable **Show Plugin Content** in the Content Browser.
-2. Open **PRTGI Content → Maps → PRTGI_Showcase**, asset path `/PRTGI/Maps/PRTGI_Showcase`.
-3. Select the six `PRTProbeVolume` actors and run **Build Precomputation**; wait for completion.
-4. Click the Editor viewport or PIE game view, then press **Ctrl+Alt+2** to enable PRT and **Ctrl+Alt+3** to compare it with Lumen.
-5. Press **Ctrl+Alt+4** to inspect PRT indirect lighting only, and **Ctrl+Alt+P** to view probes.
-6. Press **Ctrl+Alt+[ / ]** to rotate the sun and observe the relighting results.
+1. 콘텐츠 브라우저에서 **Show Plugin Content**를 켭니다.
+2. **PRTGI Content → Maps → PRTGI_Showcase**를 엽니다. 에셋 경로는 `/PRTGI/Maps/PRTGI_Showcase`입니다.
+3. `PRTProbeVolume` 여섯 개를 선택하고 **Build Precomputation**을 실행한 뒤 완료될 때까지 기다립니다.
+4. 에디터 뷰포트나 PIE 게임 화면을 클릭한 뒤 **Ctrl+Alt+2**로 PRT를 켜고, **Ctrl+Alt+3**으로 Lumen과 비교합니다.
+5. **Ctrl+Alt+4**로 PRT 간접광만 확인하고, **Ctrl+Alt+P**로 프로브를 표시합니다.
+6. **Ctrl+Alt+[ / ]**로 태양을 회전해 조명 변화를 확인합니다.
 
-This branch uses UE6 Renderer interfaces. Comparing against hardware ray tracing Lumen requires DX12 / SM6, Ray Tracing, and the relevant support settings in the project. These are host project rendering settings; the plugin does not forcibly override the project's rendering configuration.
+이 브랜치는 UE6 Renderer 인터페이스를 사용합니다. 하드웨어 레이 트레이싱 Lumen과 비교하려면 프로젝트에 DX12 / SM6, Ray Tracing 및 관련 지원 설정이 필요합니다. 플러그인은 프로젝트 렌더링 설정을 강제로 덮어쓰지 않습니다.
 
-When comparing against hardware ray tracing Lumen, enable **Support Hardware Ray Tracing**, **Support Compute Skin Cache**, and **Use Hardware Ray Tracing when available**, and use a supported GPU. Restart the Editor after changing settings that require it. See Epic's [Lumen Technical Details](https://dev.epicgames.com/documentation/en-us/unreal-engine/lumen-technical-details-in-unreal-engine).
+지원 GPU에서 **Support Hardware Ray Tracing**, **Support Compute Skin Cache**, **Use Hardware Ray Tracing when available**을 활성화하세요. 재시작이 필요한 설정을 변경했다면 에디터를 다시 시작합니다. 관련 설명은 Epic의 [Lumen Technical Details](https://dev.epicgames.com/documentation/en-us/unreal-engine/lumen-technical-details-in-unreal-engine)를 참고하세요.
 
-The bundled showcase's default map profile temporarily sets `r.Lumen.HardwareRayTracing=1`, `r.Lumen.ScreenProbeGather.ScreenTraces=0`, and `r.EyeAdaptation.CachedLightingPreExposure=8`. Previous values are restored when leaving the map. Its Lumen comparison therefore has diffuse screen traces disabled; it is not the default Lumen configuration. These overrides do not enable missing project-level hardware ray tracing support.
+포함된 예제 맵의 기본 프로필은 일시적으로 `r.Lumen.HardwareRayTracing=1`, `r.Lumen.ScreenProbeGather.ScreenTraces=0`, `r.EyeAdaptation.CachedLightingPreExposure=8`을 적용하며, 맵을 벗어나면 이전 값으로 복원합니다. 따라서 예제의 Lumen 비교는 확산광 화면 추적을 끈 상태로 이루어집니다. 이 설정만으로 프로젝트에 없는 하드웨어 레이 트레이싱 지원이 활성화되지는 않습니다.
 
-The UE6 host settings are in [Config/DefaultEngine.ini](Config/DefaultEngine.ini): Plugin GI uses `r.DynamicGlobalIlluminationMethod=2`, reflections use `r.ReflectionMethod=0`, and Substrate is enabled with `r.Substrate.ProjectGBufferFormat=0`. Use `PRTGI.SetMode PRT` to select Plugin GI at runtime; the command resolves the engine enum. The runtime PRT default is **6 bounces**, and generated caches remain local. When installing elsewhere, merge the relevant settings into that UE6 project.
+UE6 실행용 프로젝트 설정은 [Config/DefaultEngine.ini](Config/DefaultEngine.ini)에 있습니다. Plugin GI는 `r.DynamicGlobalIlluminationMethod=2`, 반사는 `r.ReflectionMethod=0`이며, Substrate를 켜고 `r.Substrate.ProjectGBufferFormat=0`을 사용합니다. 런타임에서는 엔진의 GI 열거형을 확인하는 `PRTGI.SetMode PRT` 명령으로 PRT를 선택합니다. 기본 바운스는 **6회**이고, 사전 계산 캐시는 로컬에서 생성합니다. 다른 UE6 프로젝트에 설치할 때는 필요한 설정을 해당 프로젝트에 반영하세요.
 
-The showcase uses a single shared UE DirectionalLight. The original area-light regions of the boxes have been replaced with openings, and the front openings are retained for viewing.
+예제는 UE DirectionalLight 하나를 공유합니다. 박스의 기존 면광원 영역은 개구부로 교체했으며, 관찰을 위한 전면 개구부는 유지했습니다.
 
-| Volume | Local validation settings/results |
+| 볼륨 | 로컬 검증 설정·결과 |
 |---|---|
-| PRT_Global, PRT_ClassicBox, PRT_ColorBox, PRT_InvertedBox | Built for 1–12 indirect bounces; defaults to 6 at runtime |
-| PRT_ShinyBox | Built at 16×16 per face; 21 of 878 audited probes excluded with a capture warning |
-| PRT_MetallicBox | Built at 16×16 per face, with 40 cm probe spacing and a 2 cm transport cell size; 77 of 2,212 audited probes excluded with a capture warning |
+| PRT_Global, PRT_ClassicBox, PRT_ColorBox, PRT_InvertedBox | 간접광 반사 1~12회용 데이터. 런타임 기본값은 6회 |
+| PRT_ShinyBox | 면당 16×16 해상도. 검사한 프로브 878개 중 21개를 캡처 경고와 함께 제외 |
+| PRT_MetallicBox | 면당 16×16 해상도, 프로브 간격 40 cm, 전송 셀 크기 2 cm. 검사한 프로브 2,212개 중 77개를 캡처 경고와 함께 제외 |
 
-Caches are not bundled. Select all six showcase `PRTProbeVolume` actors and run **Build Precomputation**, then wait for completion before comparing lighting. Locally generated caches must still be included when packaging a playable build.
+캐시는 저장소에 포함하지 않습니다. 예제의 `PRTProbeVolume` 여섯 개를 선택해 **Build Precomputation**을 실행하고 완료된 뒤 조명을 비교하세요. 실행용 빌드를 패키징할 때는 로컬에서 생성한 캐시를 포함해야 합니다.
 
-## Adding a Probe Volume to Your Scene
+## 장면에 프로브 볼륨 추가
 
-1. Save the level and ensure that the geometry and materials participating in precomputation remain static.
-2. Add a UE **DirectionalLight** and set its Mobility to **Movable** for real-time rotation. If there are multiple directional lights, add the Actor Tag `PRTGI.PrimaryLight` to the intended light.
-3. Search for **PRT Probe Volume** in Place Actors and drag it into the scene.
-4. Configure the volume bounds, probe spacing, Near Clip, and Priority.
-5. Enable PRT GI, then click **Build Precomputation** under the Actor's Details → **PRT → Build**.
-6. Wait for completion, check **Cache Status**, **GI Active**, **Effective Bounces**, and **Build Warnings** under **PRT → Status**, then save the level.
+1. 레벨을 저장합니다. 사전 계산에 사용하는 지오메트리와 머티리얼은 정적 상태를 유지해야 합니다.
+2. UE **DirectionalLight**를 추가하고, 실시간으로 회전할 수 있도록 Mobility를 **Movable**로 설정합니다. 방향광이 여러 개라면 사용할 광원의 Actor Tag에 `PRTGI.PrimaryLight`를 추가합니다.
+3. Place Actors에서 **PRT Probe Volume**을 찾아 장면에 배치합니다.
+4. 볼륨 범위, 프로브 간격, Near Clip, Priority를 설정합니다.
+5. PRT GI를 켠 뒤 액터의 Details → **PRT → Build**에서 **Build Precomputation**을 누릅니다.
+6. 완료되면 **PRT → Status**의 **Cache Status**, **GI Active**, **Effective Bounces**, **Build Warnings**를 확인하고 레벨을 저장합니다.
 
-Volumes contribute indirect lighting and display probes only in **PRT GI mode**. Switching to Lumen disables the PRT GI contribution.
+볼륨은 **PRT GI 모드**에서만 간접광에 기여하고 프로브를 표시합니다. Lumen으로 전환하면 PRT GI의 기여는 꺼집니다.
 
-### Parameters
+### 설정 항목
 
-| Parameter | Description |
+| 항목 | 설명 |
 |---|---|
-| Enabled | Whether this volume is enabled |
-| Extent | Half-size along each axis, in cm; Actor Scale also affects the bounds |
-| Probe Spacing | Target maximum spacing along each axis, in cm; see Actual Spacing for the resulting uniform spacing |
-| Probe Inset | Distance by which the probe grid is inset from the volume boundaries, in cm |
-| Priority | Use a higher priority for locally dense regions |
-| Near Clip Cm | Near clipping distance for probe captures, default 1 cm, range 0.01–10 cm; separate from the main camera's Near Clip |
-| Capture Resolution | Resolution of each capture face, default 16, range 4–32; increasing it raises capture cost |
-| Transport Cell Size | Static surface aggregation size, default 2 cm, range 1–100 cm; smaller values generally increase data size and computation |
-| Blend Face / Distance | One transition face and its distance in cm: 0=none, 1/2=−/+X, 3/4=−/+Y, 5/6=−/+Z; configure only at an opening where a transition is needed |
-| Display Mode | Hidden, Positions, or Lighting; Lighting shows each probe's lighting color |
-| Probe Radius | Radius of the visualization spheres, in cm; does not change the actual sampling positions |
+| Enabled | 볼륨 활성화 여부 |
+| Extent | 각 축 방향 반쪽 크기(cm). 액터 스케일도 범위에 반영됨 |
+| Probe Spacing | 각 축의 목표 최대 간격(cm). 실제 균등 배치 간격은 Actual Spacing에서 확인 |
+| Probe Inset | 볼륨 경계에서 프로브 격자를 안쪽으로 들이는 거리(cm) |
+| Priority | 국소적으로 촘촘히 배치한 영역에는 더 높은 우선순위 사용 |
+| Near Clip Cm | 프로브 캡처의 근거리 클리핑 거리. 기본 1 cm, 범위 0.01~10 cm. 주 카메라의 Near Clip과 별개 |
+| Capture Resolution | 캡처 면당 해상도. 기본 16, 범위 4~32. 높일수록 캡처 비용 증가 |
+| Transport Cell Size | 정적 표면을 묶는 단위 크기. 기본 2 cm, 범위 1~100 cm. 작을수록 대체로 데이터와 계산량 증가 |
+| Blend Face / Distance | 전환에 사용할 면 하나와 거리(cm). 0=없음, 1/2=−/+X, 3/4=−/+Y, 5/6=−/+Z. 전환이 필요한 개구부에만 설정 |
+| Display Mode | Hidden, Positions, Lighting. Lighting은 각 프로브의 조명 색상 표시 |
+| Probe Radius | 시각화 구체의 반지름(cm). 실제 샘플링 위치에는 영향 없음 |
 
-Volumes are currently **axis-aligned** and do not support rotation. Each axis supports up to 32 probes. Increase the spacing or split the volume if this limit is exceeded.
+볼륨은 현재 **축에 정렬된 형태**이며 회전은 지원하지 않습니다. 각 축에는 최대 32개의 프로브를 배치할 수 있습니다. 한도를 넘으면 간격을 넓히거나 볼륨을 나누세요.
 
-There is also a separate **4,000,000 capture sample budget** per volume: `ProbeCounts.X × ProbeCounts.Y × ProbeCounts.Z × 6 × CaptureResolution²` must not exceed this limit. At the default resolution of 16, this allows at most 2,604 probes in total, subject to the per-axis limit. Reduce capture resolution, increase probe spacing, or split the volume if the budget is exceeded.
+별도로 볼륨당 **캡처 샘플 4,000,000개** 제한이 있습니다. `ProbeCounts.X × ProbeCounts.Y × ProbeCounts.Z × 6 × CaptureResolution²`가 이 값을 넘으면 안 됩니다. 기본 해상도 16에서는 축별 제한을 지키면서 총 2,604개까지 배치할 수 있습니다. 한도를 넘으면 캡처 해상도를 낮추거나, 프로브 간격을 넓히거나, 볼륨을 나누세요.
 
-A starting point is Priority=0 with roughly 200 cm spacing for a global volume, and Priority=10 with roughly 30–40 cm spacing for local volumes. Adjust these values to your scene's dimensions. Avoid placing probes inside walls or configuring blend transitions across solid walls. An excessively large Near Clip can clip geometry close to a probe, causing incorrect visibility or light leaks.
+처음에는 전역 볼륨을 Priority=0, 간격 약 200 cm로, 지역 볼륨을 Priority=10, 간격 약 30~40 cm로 설정한 뒤 장면 크기에 맞춰 조정하세요. 프로브를 벽 안에 배치하거나 막힌 벽을 가로질러 블렌딩 전환을 설정하지 마세요. Near Clip이 너무 크면 프로브 가까이의 지오메트리가 잘려 가시성 오류나 빛샘이 생길 수 있습니다.
 
-### Precomputation and Progress
+### 사전 계산과 진행 상태
 
-- Select one or more volumes and click **Build Precomputation** to queue their builds. Use **Cancel Build** to cancel builds for the selected volumes.
-- Under **PRT → Build**, **Build Progress** covers geometry capture, transport computation, and saving. **Build Stage** describes the current operation; both appear alongside the build buttons. An existing valid geometry cache is reused, so a build may run only the transport stage. Progress is weighted by stage and is not an estimate of remaining time.
-- The current build combines UE scene capture with CPU transport precomputation. Runtime relighting uses the GPU by default; the entire build is not a GPU-only bake.
-- A build saves the data needed to switch between 1–12 indirect bounces. Switching between cached bounce counts at runtime does not require recapturing the scene. The default is 6 bounces.
-- Build time depends on probe count, capture resolution, geometry complexity, transport cell size, and hardware. Validate a small volume first, then expand the coverage.
-- Rebuild after changing static geometry, materials, the probe grid layout, or capture parameters. Duplicating a volume generates a new GUID, so the duplicate needs its own cache.
+- 볼륨을 하나 이상 선택하고 **Build Precomputation**을 누르면 빌드 대기열에 추가됩니다. **Cancel Build**는 선택한 볼륨의 빌드를 취소합니다.
+- **PRT → Build**의 **Build Progress**는 지오메트리 캡처, 전송 계산, 저장을 포함한 진행률입니다. **Build Stage**에는 현재 작업이 표시됩니다. 유효한 지오메트리 캐시가 있으면 재사용하므로 전송 단계만 실행될 수도 있습니다. 진행률은 단계별 가중치이며 남은 시간의 추정값이 아닙니다.
+- 빌드는 UE 장면 캡처와 CPU 전송 사전 계산을 함께 사용합니다. 런타임 조명 갱신은 기본적으로 GPU에서 처리하지만 빌드 전체가 GPU 베이크인 것은 아닙니다.
+- 빌드 시 간접광 반사 1~12회 전환에 필요한 데이터를 저장합니다. 캐시가 있는 반사 횟수로 전환할 때는 장면을 다시 캡처하지 않습니다. 기본값은 6회입니다.
+- 빌드 시간은 프로브 수, 캡처 해상도, 지오메트리 복잡도, 전송 셀 크기와 하드웨어에 따라 달라집니다. 작은 볼륨에서 먼저 검증한 뒤 범위를 넓히세요.
+- 정적 지오메트리, 머티리얼, 프로브 격자 배치, 캡처 매개변수를 바꾸면 다시 빌드해야 합니다. 볼륨을 복제하면 새 GUID가 생성되므로 복제본에도 별도의 캐시가 필요합니다.
 
-Probes with geometry audit mismatches or empty captures are excluded from transport and interpolation. A build can finish with a warning if the excluded count is at most 5% of audited probes and the remaining data passes validation; larger failures stop the build. Inspect **Build Warnings**, **Invalid Probes**, and the affected area before using the result. The capture audit uses collision queries on the **Visibility** channel, so participating geometry needs collision that matches its rendered surfaces and blocks this channel.
+지오메트리 검사 결과가 맞지 않거나 캡처가 비어 있는 프로브는 전송과 보간에서 제외됩니다. 제외된 수가 검사한 프로브의 5% 이하이고 나머지 데이터가 검증을 통과하면 경고와 함께 빌드가 완료될 수 있습니다. 이를 넘는 오류는 빌드를 중단시킵니다. 결과를 사용하기 전에 **Build Warnings**, **Invalid Probes**와 해당 영역을 확인하세요. 캡처 검사는 **Visibility** 채널의 충돌 쿼리를 사용하므로, 참여 지오메트리에는 렌더링 표면과 일치하며 이 채널을 차단하는 충돌 설정이 필요합니다.
 
-Each volume is limited to **24 million transport entries**, at 64 bytes per entry, for up to approximately **1464.8 MiB** of transport data. The file loading limit allows an additional 384 MiB for geometry indices and other data. This is not a total memory budget: temporary build copies, CPU caches, and GPU buffers require additional memory. Capture resolution is not automatically reduced when approaching the limit.
+볼륨당 전송 항목은 **2,400만 개**, 항목당 64바이트로 제한되며 전송 데이터는 최대 약 **1464.8 MiB**입니다. 파일 로드 한도에는 지오메트리 인덱스 등을 위한 384 MiB가 추가로 허용됩니다. 빌드 임시 복사본, CPU 캐시, GPU 버퍼는 별도 메모리를 사용하므로 이 수치는 총 메모리 한도가 아닙니다. 한도에 가까워져도 캡처 해상도가 자동으로 낮아지지는 않습니다.
 
-## Content Layout
+## 콘텐츠 구조
 
-The paths below are relative to the plugin directory, `Plugins/PRTGI`.
+아래 경로는 플러그인 폴더 `Plugins/PRTGI`를 기준으로 합니다.
 
-- `Content/Maps`: Showcase level.
-- `Content/Showcase/Materials`, `Meshes`, etc.: Copies of project assets required by the showcase, with references redirected to assets inside the plugin.
-- `Content/Materials`: Probe visualization and geometry capture materials.
-- `Content/Precomputed/Volumes`: Raw `.surfels` / `.multi` caches, separated by level package name and volume GUID; they do not contain light parameters.
+- `Content/Maps`: 예제 레벨.
+- `Content/Showcase/Materials`, `Meshes` 등: 예제에 필요한 프로젝트 에셋의 복사본. 참조는 플러그인 내부 에셋으로 연결됩니다.
+- `Content/Materials`: 프로브 시각화와 지오메트리 캡처용 머티리얼.
+- `Content/Precomputed/Volumes`: 레벨 패키지 이름과 볼륨 GUID별로 구분한 `.surfels` / `.multi` 원시 캐시. 광원 매개변수는 포함하지 않습니다.
 
-The `.surfels` file stores captured geometry data, and its paired `.multi` file stores multi-bounce transport data. Keep both files together. These are raw binary files and do not appear as `.uasset` files in the Content Browser. The caches are not final images for a fixed sun angle: at runtime, the plugin still computes the current light input and occlusion before applying the precomputed transport.
+`.surfels`는 캡처한 지오메트리를, 짝이 되는 `.multi`는 다중 반사 전송 데이터를 저장합니다. 두 파일을 함께 보관하세요. 원시 바이너리 파일이므로 콘텐츠 브라우저에 `.uasset`으로 표시되지 않습니다. 캐시는 고정된 태양 각도의 최종 이미지가 아닙니다. 런타임에도 현재 광원 입력과 가림을 계산한 뒤 사전 계산된 전송 데이터를 적용합니다.
 
-For plugin levels under `/PRTGI/`, caches are saved inside the plugin at `Content/Precomputed/Volumes/<level-package>/<GUID>.prtgi.surfels`, with a companion `<GUID>.prtgi.surfels.multi`. Other levels, including your own `/Game/` levels, save to `YourProject/Content/PRTGI/Volumes/<level-package>/` instead. Slashes in the level package name are replaced with underscores. Moving or renaming a level changes its cache path, so check **Cache File** and rebuild if needed.
+`/PRTGI/` 아래의 플러그인 레벨은 플러그인 내부의 `Content/Precomputed/Volumes/<레벨-패키지>/<GUID>.prtgi.surfels`와 `<GUID>.prtgi.surfels.multi`에 저장합니다. `/Game/`을 포함한 다른 레벨은 `YourProject/Content/PRTGI/Volumes/<레벨-패키지>/`에 저장합니다. 레벨 패키지 이름의 슬래시는 밑줄로 바뀝니다. 레벨을 이동하거나 이름을 바꾸면 캐시 경로도 바뀌므로 **Cache File**을 확인하고 필요하면 다시 빌드하세요.
 
-The plugin's build rules stage its own `Content/Precomputed` directory as loose **NonUFS** files. For packaged projects using `/Game/` levels, also stage `Content/PRTGI/Volumes` via **Additional Non-Asset Directories To Copy** (path relative to project Content: `PRTGI/Volumes`). Verify cache loading in the packaged build; the included validation report covers Editor usage.
+플러그인의 빌드 규칙은 자체 `Content/Precomputed` 폴더를 별도의 **NonUFS** 파일로 패키징합니다. `/Game/` 레벨을 사용하는 프로젝트에서는 **Additional Non-Asset Directories To Copy**에 `PRTGI/Volumes`를 추가해 프로젝트의 `Content/PRTGI/Volumes`도 포함해야 합니다. 입력 경로는 프로젝트 Content 기준입니다. 기존 검증 기록은 에디터 사용을 대상으로 하므로 패키징 결과에서도 캐시 로드를 확인하세요.
 
-## Current Limitations
+## 현재 제한 사항
 
-- PRT computes indirect diffuse lighting driven by one selected DirectionalLight. Point, spot, and rect lights, SkyLight, and emissive materials do not drive this PRT transport; specular GI and reflections are not supplied by the plugin.
-- Geometry and materials used by the transport must remain static. Runtime light changes reuse cached geometry for GPU occlusion; moving occluders are not incorporated into that cached transport automatically.
-- Curved surfaces can show probe-related rings, and brightness can differ from Lumen. Check the results in your scene before relying on the lighting comparison.
+- PRT는 선택한 DirectionalLight 하나에 의한 간접 확산광을 계산합니다. Point, Spot, Rect Light, SkyLight, 발광 머티리얼은 이 전송 계산의 광원으로 사용되지 않습니다. 플러그인은 스페큘러 GI나 반사를 제공하지 않습니다.
+- 전송에 사용하는 지오메트리와 머티리얼은 정적 상태여야 합니다. 런타임 광원이 바뀌면 GPU 가림 계산에 캐시된 지오메트리를 재사용합니다. 움직이는 차폐물은 캐시된 전송에 자동으로 반영되지 않습니다.
+- 곡면에 프로브로 인한 고리 무늬가 나타나거나 Lumen과 밝기가 다를 수 있습니다. 조명을 비교할 때 실제 장면의 결과를 확인하세요.
 
-## Keyboard Shortcuts
+## 단축키
 
-Click the Editor / PIE viewport first to give it focus.
+에디터 또는 PIE 뷰포트를 클릭해 포커스를 준 뒤 사용하세요.
 
-| Shortcut | Action |
+| 단축키 | 동작 |
 |---|---|
-| Ctrl+Alt+1 | Disable dynamic GI; this showcase has no offline baked lighting |
+| Ctrl+Alt+1 | 동적 GI 끄기. 이 예제에는 오프라인 베이크 조명이 없음 |
 | Ctrl+Alt+2 | PRT GI |
 | Ctrl+Alt+3 | Lumen GI |
-| Ctrl+Alt+4 | Toggle PRT indirect diffuse only / full view |
-| Ctrl+Alt+P | Show / hide probes; the volume's Display Mode determines whether they appear as position markers or lighting spheres |
-| Ctrl+Alt+G | Cycle through 4 / 8 / 12 indirect bounces; requires the corresponding cache |
-| Ctrl+Alt+[ / ] | Decrease / increase DirectionalLight Yaw by 5° (default step) |
-| Ctrl+Alt+Shift+[ / ] | Decrease / increase DirectionalLight Pitch by 5° (default step) |
-| Ctrl+Alt+B | Legacy global bake command; does not build Actor Volumes |
+| Ctrl+Alt+4 | PRT 간접 확산광만 보기 / 전체 화면 전환 |
+| Ctrl+Alt+P | 프로브 표시 / 숨기기. 위치 마커 또는 조명 구체 표시는 볼륨의 Display Mode에 따름 |
+| Ctrl+Alt+G | 간접광 반사 4 / 8 / 12회 순환. 해당 캐시 필요 |
+| Ctrl+Alt+[ / ] | DirectionalLight Yaw를 기본 간격인 5°만큼 감소 / 증가 |
+| Ctrl+Alt+Shift+[ / ] | DirectionalLight Pitch를 기본 간격인 5°만큼 감소 / 증가 |
+| Ctrl+Alt+B | 이전 방식의 전역 베이크 명령. 액터 볼륨은 빌드하지 않음 |
 
-For local precomputation, select the corresponding `PRTProbeVolume` and click **Build Precomputation**. The default is 6 indirect bounces.
+지역 사전 계산은 해당 `PRTProbeVolume`을 선택하고 **Build Precomputation**을 눌러 실행합니다. 간접광 반사 기본값은 6회입니다.
 
-If focus or keyboard layout interferes with the shortcuts, run these commands individually in the UE Console:
+포커스나 키보드 배열 때문에 단축키가 작동하지 않으면 UE 콘솔에서 다음 명령을 하나씩 실행하세요.
 
 ```text
 PRTGI.SetMode PRT
@@ -144,15 +144,15 @@ PRTGI.RotateLight 5 0
 PRTGI.Status
 ```
 
-`PRTGI.SetMode Offline` is a legacy command name for exiting dynamic GI. It does not automatically generate offline lighting or a Path Tracing reference image.
+`PRTGI.SetMode Offline`은 동적 GI를 종료하는 이전 명령 이름입니다. 오프라인 조명이나 Path Tracing 기준 이미지를 자동으로 생성하지는 않습니다.
 
-## Surfel Quality Diagnostics
+## Surfel 품질 진단
 
-Since v6, transport caches bind captured samples to triangles, separate geometric and shading normals, and evaluate secondary hits using per-triangle material charts with original UVs and vertex colors. The bake includes base color, metallic and tangent-space normals. Transport remains Lambertian. Receiver shading uses GBuffer specular/roughness and UE's analytic GGX energy approximation with multiple-scattering compensation to reserve energy for the specular lobe. This receiver correction approximates a single GGX material; it does not implement all Substrate layers, glossy transport, dynamic occluders, sky lighting or emissive transport. Existing v3–v6 caches remain readable and retain their version on save. Rebuild every participating volume to adopt v7 consistently.
+v6부터 전송 캐시는 캡처 표면을 삼각형에 연결하고 기하 법선과 셰이딩 법선을 분리합니다. 2차 광선이 실제로 맞힌 삼각형의 재질을 원래 UV와 정점 색상을 유지한 차트에서 조회합니다. 베이크에는 기본색, 금속성, 접선 공간 법선을 사용하며 전송 계산은 Lambert 확산 모델을 유지합니다. 최종 수신 표면은 GBuffer의 반사율·거칠기와 UE의 해석적 GGX 에너지 근사·다중 산란 보정으로 반사 로브의 에너지를 제외합니다. 이 수신 표면 보정은 단일 GGX 재질의 근사이며, Substrate의 모든 레이어·광택 반사 전송·동적 차폐물·하늘광·발광 전송을 구현한 것은 아닙니다. v3~v6 캐시는 계속 읽고 같은 버전으로 저장할 수 있습니다. v7을 일관되게 적용하려면 참여하는 볼륨을 모두 다시 계산하세요.
 
-The material baker checks every interior chart texel. If primitive transforms cause raster clipping, only materials proven independent of vertex/world data may retry without primitive data. Other failures stop the bake and retain the previous cache. Charts use 16×16 tiles per triangle and therefore do not preserve arbitrarily fine texture detail.
+재질 베이커는 차트 내부의 모든 텍셀이 렌더링됐는지 검사합니다. 프리미티브 변환 때문에 차트가 잘리면 정점·월드 데이터에 의존하지 않는다고 확인된 재질만 프리미티브 데이터 없이 재시도합니다. 그 외 실패는 베이크를 중단하고 이전 캐시를 보존합니다. 삼각형마다 16×16 차트를 사용하므로 매우 세밀한 텍스처까지 그대로 보존하지는 않습니다.
 
-`PRTGI.DumpQuality` writes cache versions, material-hit coverage, per-bounce missing-hit statistics and GPU residency to `Saved/PRTGIQuality.json`. Missing-hit fractions are not energy-loss fractions. For GPU/CPU validation, set `r.PRTGI.GPUReadback 1`, allow relighting to finish, then run `PRTGI.ValidateMultiBounce`. It writes `Saved/PRTMultiBounceValidation.json` and may briefly block the editor. Restore `GPUReadback 0` afterward. Normal rendering keeps coefficients on the GPU; readback is needed only for diagnostics and probe visualization.
+`PRTGI.DumpQuality`는 캐시 버전, 실제 재질 조회 수, 반사 단계별 연결 실패 수, GPU 상주 상태를 `Saved/PRTGIQuality.json`에 기록합니다. 연결 실패율은 손실된 에너지의 비율이 아닙니다. 수치 검증은 `r.PRTGI.GPUReadback 1`을 설정하고 재조명이 끝난 뒤 `PRTGI.ValidateMultiBounce`를 실행하세요. 결과는 `Saved/PRTMultiBounceValidation.json`에 저장되며 에디터가 잠시 멈출 수 있습니다. 검증 후 `GPUReadback 0`으로 복원하세요. 일반 렌더링은 계수를 GPU에 보관하며, CPU 읽기는 진단과 프로브 시각화에 사용합니다.
 
 ```text
 python Plugins/PRTGI/Tools/quality_report.py --output Saved/PRTGIQuality/caches.json Plugins/PRTGI/Content/Precomputed/Volumes
@@ -160,52 +160,52 @@ python -m pip install numpy OpenEXR
 python Plugins/PRTGI/Tools/compare_hdr.py reference.exr candidate.exr --roi 230 150 708 570
 ```
 
-The HDR tool compares aligned linear RGB without exposure fitting. Use `PreTonemapHDRColor`, identical camera/resolution/light inputs and bounce limits. For diffuse indirect-only comparisons, disable the DirectLighting show flag and exclude indirect specular in a temporary post-process volume while keeping the Specular show flag enabled. The remaining reference can still include mixed diffuse/specular paths, so it is not an exact oracle for Lambertian PRT. Disable emissive sources and the denoiser for this test; ensure the path-intensity clamp does not clip the reference. The showcase reference uses 512 samples, four bounces, unit pre-exposure and `r.PathTracing.MaxPathIntensity 65504`.
+HDR 비교 도구는 노출을 임의로 맞추지 않고 정렬된 선형 RGB 영상을 비교합니다. `PreTonemapHDRColor`와 동일한 카메라·해상도·광원·반사 횟수를 사용하세요. 확산 간접광만 비교할 때는 DirectLighting 표시 플래그를 끄고, Specular 표시 플래그를 켠 상태에서 임시 포스트 프로세스 볼륨으로 간접 정반사 기여를 제외합니다. 그래도 기준 영상에는 확산·정반사가 섞인 경로가 남을 수 있으므로 Lambert PRT와 완전히 같은 모델의 정답 영상은 아닙니다. 이 테스트에서는 발광과 디노이저를 끄고, 경로 밝기 제한이 기준 영상을 잘라내지 않는지도 확인해야 합니다. Showcase 기준 영상은 512 샘플, 4회 반사, 사전 노출 1, `r.PathTracing.MaxPathIntensity 65504`로 촬영했습니다.
 
-| Console variable | Default | Meaning |
+| 콘솔 변수 | 기본값 | 의미 |
 |---|---:|---|
-| `r.PRTGI.GPUResident` | 1 | Keep relit coefficients on the GPU; 0 uses readback/upload |
-| `r.PRTGI.GPUReadback` | 0 | Retain CPU coefficients for numeric diagnostics |
-| `r.PRTGI.ProbeVisibility` | 1 | 0 disabled, 1 first-hit planes, 2 experimental depth moments, 3 static BVH segments |
-| `r.PRTGI.VisibilityBiasCm` | 1 | Receiver visibility bias in cm |
-| `r.PRTGI.HemisphereTransition` | 0 | Positive-hemisphere transition as a fraction of probe spacing |
-| `r.PRTGI.ContactSamples` | 0 | Optional static contact occlusion: 0–16 rays per pixel |
-| `r.PRTGI.ContactRadiusCm` | 20 | Maximum contact ray distance |
-| `r.PRTGI.ContactBiasCm` | 0.1 | Contact ray origin/intersection bias |
-| `r.PRTGI.Debug` | 0 | 1 visibility, 2 interpolation support, 3 hemisphere acceptance, 4 contact visibility |
+| `r.PRTGI.GPUResident` | 1 | 재조명 계수를 GPU에 보관. 0은 읽기·재업로드 경로 |
+| `r.PRTGI.GPUReadback` | 0 | 수치 진단을 위해 CPU에도 계수 보관 |
+| `r.PRTGI.ProbeVisibility` | 1 | 0 끔, 1 최초 교차 평면, 2 실험적 깊이 모멘트, 3 정적 BVH 선분 검사 |
+| `r.PRTGI.VisibilityBiasCm` | 1 | 수신 표면 가시성 바이어스(cm) |
+| `r.PRTGI.HemisphereTransition` | 0 | 프로브 간격 대비 양의 반구 전환 폭 |
+| `r.PRTGI.ContactSamples` | 0 | 선택적 정적 접촉 차폐: 픽셀당 0~16개 광선 |
+| `r.PRTGI.ContactRadiusCm` | 20 | 접촉 광선 최대 거리 |
+| `r.PRTGI.ContactBiasCm` | 0.1 | 접촉 광선 시작점·교차 바이어스 |
+| `r.PRTGI.Debug` | 0 | 1 가시성, 2 보간 지지율, 3 반구 수용률, 4 접촉 가시성 |
 
-Contact occlusion is a short-range diffuse approximation, with extra GPU cost and possible sampling noise. It does not replace transported radiance. Depth moments blend four neighboring capture samples and are experimental; they produced wall artifacts in the showcase. Exact BVH visibility also remains optional. Restore `IndirectOnly 0`, `Debug 0`, `ProbeVisibility 1`, `HemisphereTransition 0` after diagnostics.
+접촉 차폐는 짧은 거리의 확산광 근사입니다. GPU 비용과 표본 노이즈가 추가되며 전송된 복사휘도를 대신하지 않습니다. 깊이 모멘트는 캡처의 네 이웃 표본을 보간하는 실험으로, Showcase에서 벽의 얼룩이 증가했습니다. 정확한 BVH 가시성도 선택 기능으로 유지합니다. 진단 후 `IndirectOnly 0`, `Debug 0`, `ProbeVisibility 1`, `HemisphereTransition 0`으로 복원하세요.
 
-The implementation follows the geometric/shading-normal and reconstruction guidance in [EA GIBS, SIGGRAPH 2024](https://www.advances.realtimerendering.com/s2024/content/EA-GIBS2/Apers_Advances-s2024_Shipping-Dynamic-GI.pdf). [SurfelPlus, SIGGRAPH 2025 poster](https://github.com/WANG-Ruipeng/SurfelPlus/blob/master/docs/files/Poster.pdf) and [DDGI](https://arxiv.org/abs/2009.10796) inform further comparisons; this plugin is not an implementation of their complete systems.
+기하·셰이딩 법선 분리와 재구성은 [EA GIBS SIGGRAPH 2024 발표](https://www.advances.realtimerendering.com/s2024/content/EA-GIBS2/Apers_Advances-s2024_Shipping-Dynamic-GI.pdf)를 참고했습니다. [SurfelPlus SIGGRAPH 2025 포스터](https://github.com/WANG-Ruipeng/SurfelPlus/blob/master/docs/files/Poster.pdf)와 [DDGI](https://arxiv.org/abs/2009.10796)도 비교 자료로 사용하며, 이 플러그인이 해당 시스템 전체를 구현한 것은 아닙니다.
 
-Earlier v6 showcase validation on UE6: all six v6 caches have zero unmapped secondary hits (previously 0.68–9.26%). At the fixed camera, RGB relative RMSE against the diffuse-component HDR reference changed from **23.24% / 32.61% / 24.84%** to **18.02% / 16.70% / 11.24%** for ClassicBox / ColorBox / contact-region ROIs with 8 contact samples. These are limited-region comparisons, not a claim of complete scene equivalence. GPU/CPU coefficient error is at most `3.75e-5`; five focused automation tests pass. MetalBox and ShinyBox retain their existing capture-audit exclusions.
+이전 v6의 UE6 Showcase 검증에서 v6 캐시 여섯 개의 2차 표면 조회 누락은 모두 0이었습니다. 기존 누락률은 0.68~9.26%였습니다. 고정 카메라의 확산 성분 HDR 기준 영상과 비교한 RGB 상대 RMSE는 ClassicBox / ColorBox / 접촉부에서 **23.24% / 32.61% / 24.84% → 18.02% / 16.70% / 11.24%**로 줄었습니다(접촉 표본 8개). 특정 영역의 비교 결과이며 장면 전체가 기준 렌더러와 같다는 뜻은 아닙니다. GPU·CPU 계수 오차는 최대 `3.75e-5`이고, 관련 자동화 테스트 5개가 통과했습니다. MetalBox와 ShinyBox의 기존 캡처 감사 제외 항목은 유지됩니다.
 
-On an RTX 4090, three static-frame measurements gave a median PRT apply cost of **0.499 ms** without contact correction and **2.725 ms** with 8 samples (1740×590 input, TSR to 2164×733). Total six-volume transport files grew from **1651 MiB to 2157 MiB**. The host project's quality preset enables 8 contact samples; the plugin default remains 0. Set `r.PRTGI.ContactSamples 0` for the lower-cost option. Detailed conditions, ROI coordinates, cache counters and remaining limitations are in [validation_showcase.json](Plugins/PRTGI/Tools/validation_showcase.json).
+RTX 4090의 정적 프레임 3회 측정에서 PRT 적용 패스 중앙값은 접촉 보정 없이 **0.499 ms**, 표본 8개 사용 시 **2.725 ms**였습니다(입력 1740×590, TSR 출력 2164×733). 여섯 볼륨의 전송 파일 합계는 **1651 MiB → 2157 MiB**로 증가했습니다. 호스트 프로젝트의 품질 설정은 접촉 표본 8개를 사용하고 플러그인 기본값은 0을 유지합니다. GPU 비용을 줄이려면 `r.PRTGI.ContactSamples 0`을 설정하세요. 측정 조건, ROI 좌표, 캐시 통계, 남은 한계는 [validation_showcase.json](Plugins/PRTGI/Tools/validation_showcase.json)에 기록했습니다.
 
-## Comparing 4, 8 and 12 bounces
+## 4·8·12회 바운스 비교
 
-New v7 caches bake up to 12 orders once. Use `r.PRTGI.Bounces 4`, `8` or `12`, or **Ctrl+Alt+G** (4 → 8 → 12 → 4). The runtime default is 6. Old v3–v6 caches cap the effective count at 4 and report that they need rebuilding. Rebuild all participating volumes to compare higher orders.
+새 v7 캐시는 최대 12회 경로를 한 번 사전 계산합니다. `r.PRTGI.Bounces 4`, `8`, `12` 또는 **Ctrl+Alt+G**(4 → 8 → 12 → 4)로 비교합니다. 런타임 기본값은 6회입니다. 기존 v3~v6 캐시는 실제 적용 횟수를 4회로 제한하고 재계산 안내를 표시합니다. 8·12회를 비교하려면 참여하는 볼륨을 모두 다시 계산하세요.
 
-**Transport Min Throughput** on each `PRTProbeVolume` defaults to **0.01**. After preserving the first four orders, the bake stops a path before its next trace when the largest RGB component of cumulative diffuse throughput falls below this threshold. Set 0 to disable this cutoff; the existing near-zero numerical guard remains. Changing the value invalidates the transport cache and requires **Build Precomputation**. This deterministic truncation is biased and is not a 1% radiance-error guarantee, especially with high-contrast lighting. It is independent of the current light direction or intensity.
+각 `PRTProbeVolume`의 **Transport Min Throughput** 기본값은 **0.01**입니다. 처음 4회는 유지하고, 이후 누적 확산 반사율의 RGB 최댓값이 임계값 미만이면 다음 광선을 추적하기 전에 경로를 끝냅니다. 0으로 설정하면 이 조기 종료를 끕니다. 기존의 극소값 수치 보호 조건은 유지됩니다. 값을 바꾸면 전송 캐시가 무효화되므로 **Build Precomputation**이 필요합니다. 이 방식은 작은 기여를 생략하는 편향된 근사이며, 특히 밝기 대비가 큰 조명에서 화면 오차 1%를 보장하지 않습니다. 현재 광원 방향이나 세기에 의존하지 않는 기준입니다.
 
-Paths are not traced for 8 or 12 bounces every frame. Light or bounce-count changes re-evaluate source lighting and cached transport into SH coefficients. Static frames interpolate those coefficients; the separate contact-occlusion pass still runs per frame. All orders share one cache, so selecting 4 does not shrink the allocated cache, although GPU transport evaluation skips later sorted entries.
+매 프레임 8·12회 경로를 다시 추적하지 않습니다. 광원이나 바운스 수가 바뀔 때 광원 입력과 저장된 전송 데이터를 계산해 SH 계수를 갱신하고, 정적인 프레임에서는 그 계수를 보간합니다. 별도의 접촉 차폐 패스는 매 프레임 실행됩니다. 모든 횟수가 하나의 캐시를 공유하므로 4회를 선택해도 할당된 캐시 메모리는 줄지 않지만, GPU 전송 계산은 이후 단계의 정렬된 항목을 건너뜁니다.
 
-`PRTGI.DumpQuality` and `quality_report.py` include per-order paths, early termination counts, the maximum order and cutoff. `PRTGI.ValidateMultiBounce` now reports `bounce_counts: [1,4,8,12]` alongside its energy array (legacy caches cap the last two entries).
+`PRTGI.DumpQuality`와 `quality_report.py`는 단계별 경로 수·조기 종료 수·최대 횟수·임계값을 기록합니다. `PRTGI.ValidateMultiBounce`의 에너지 배열은 이제 `bounce_counts: [1,4,8,12]` 순서입니다. 구버전 캐시는 뒤의 두 항목도 4회로 제한합니다.
 
 ```text
 python Plugins/PRTGI/Tools/compare_bounces.py reference12.exr b4.exr b8.exr b12.exr --roi classic 930 260 1190 510 --roi color 1490 330 1810 580 --output comparison.json
 ```
 
-Use the linear `*_PreTonemapHDRColor.exr` files. For this comparison, use one 12-bounce reference, identical camera/light/exposure settings, and the same contact-occlusion setting for all candidates.
+선형 `*_PreTonemapHDRColor.exr` 파일을 입력하세요. 이번 비교에서는 12회 기준 영상 하나를 사용하고, 카메라·광원·노출과 후보 영상의 접촉 차폐 설정을 동일하게 맞춥니다.
 
-UE6 showcase results against the 12-bounce diffuse-component reference (RGB relative RMSE, contact samples 8):
+UE6 Showcase의 12회 확산 성분 기준 영상 대비 결과입니다(RGB 상대 RMSE, 접촉 표본 8개).
 
-| ROI | 4 bounces | 8 bounces | 12 bounces |
+| 비교 영역 | 4회 | 8회 | 12회 |
 |---|---:|---:|---:|
 | InvertedBox | 32.86% | 20.38% | 17.97% |
 | ClassicBox | 21.06% | 19.23% | 19.12% |
 | ColorBox | 17.47% | 16.04% | 16.33% |
 
-These single-frame captures contain rendering noise; the small ColorBox difference does not establish that 12 is worse. Eight orders provide most of the improvement in ClassicBox and ColorBox, while InvertedBox benefits more from 12. On an RTX 4090, the six-volume cached transport evaluation took approximately **2.16 / 2.91 / 3.04 ms** at 4 / 8 / 12 (median of 2 / 3 / 3 complete relight samples). Source-light evaluation adds roughly 8.7–8.9 ms to these relight events. Static-frame profiles contained no transport dispatches; changing the maximum order does not add a per-frame path-tracing loop.
+단일 프레임 캡처에는 렌더링 노이즈가 남아 있으므로 ColorBox의 작은 차이로 12회가 더 나쁘다고 단정할 수는 없습니다. ClassicBox·ColorBox는 8회에서 대부분 개선되고, InvertedBox는 12회의 추가 효과가 더 큽니다. RTX 4090에서 여섯 볼륨의 저장된 전송 데이터 계산은 4 / 8 / 12회에서 약 **2.16 / 2.91 / 3.04 ms**였습니다(완전한 조명 갱신 표본 2 / 3 / 3회의 중앙값). 여기에 광원 입력 계산 약 8.7~8.9 ms가 더해집니다. 정적 프레임 프로파일에서는 전송 계산이 실행되지 않았습니다.
 
-In a ClassicBox control bake, cutoff 0.01 reduced transport entries by **5.76%** and cache size by **6.71%** versus cutoff 0, with **0.040%** lower summed 12-order probe L0 energy. This is not an image-error guarantee. All six v7 caches total **3016.94 MiB**, have zero unmapped secondary hits, and passed CRC checks. GPU/CPU relative coefficient error remains below `3.75e-5`; all five focused tests passed. Existing MetalBox and ShinyBox capture warnings remain. See [validation_bounces.json](Plugins/PRTGI/Tools/validation_bounces.json) for ROI coordinates, conditions, raw timings and limitations.
+ClassicBox를 조기 종료 없이 계산한 대조군과 비교하면 임계값 0.01에서 전송 항목 **5.76%**, 캐시 용량 **6.71%**가 줄고, 12회 프로브 L0 에너지 합은 **0.040%** 낮아졌습니다. 화면 오차를 보장하는 수치는 아닙니다. 여섯 v7 캐시는 총 **3016.94 MiB**이며 2차 표면 조회 누락이 모두 0이고 CRC 검사를 통과했습니다. GPU·CPU 계수 상대 오차는 `3.75e-5` 미만이고 관련 테스트 5개가 통과했습니다. MetalBox·ShinyBox의 기존 캡처 경고는 남아 있습니다. 좌표·측정 조건·원시 시간·한계는 [validation_bounces.json](Plugins/PRTGI/Tools/validation_bounces.json)에 기록했습니다.
