@@ -30,4 +30,16 @@ PRTGI.Status
 
 `PRTGI.SetMode Offline`은 동적 GI를 종료하는 이전 명령 이름입니다. 오프라인 조명이나 Path Tracing 기준 이미지를 자동으로 생성하지는 않습니다.
 
-곡면의 프로브 경계 비교에는 `r.PRTGI.HemisphereTransition 0`을 사용하고, 확인 후 기본값인 `r.PRTGI.HemisphereTransition 0.2`로 복원하세요. 이 설정은 다시 사전 계산할 필요 없이 적용됩니다. [코드와 비교 결과](https://github.com/mazelines/UE5-PRT-GI/wiki/Curved-Surface-Interpolation)를 참고하세요.
+## 표본 기여도와 접촉 차폐 실험
+
+| 명령 | 의미 |
+|---|---|
+| `r.PRTGI.Debug 5` | 기여 프로브 수 / 16 |
+| `r.PRTGI.Debug 6` | 유효 프로브 수 `(Σw)²/Σ(w²)` / 16 |
+| `r.PRTGI.Debug 7` | 1 − 최대 정규화 가중치. 소수 기여에 집중될수록 빨강 |
+| `r.PRTGI.ContactHalfResolution 1` | 접촉 차폐를 가로·세로 절반 해상도로 추적하고 법선·깊이로 복원. 경계는 전체 해상도 계산 |
+| `r.PRTGI.ContactHalfResolution 0` | 기본 전체 해상도 접촉 차폐 |
+
+진단에는 `r.PRTGI.IndirectOnly 1`과 기본 노출 설정을 사용하세요. HDR 계측용 `r.EyeAdaptation.PreExposureOverride 1`을 적용 중이었다면 0으로 복원합니다. 확인 후 `r.PRTGI.Debug 0`, `r.PRTGI.IndirectOnly 0`으로 되돌립니다. 위 설정은 캐시 재빌드가 필요 없습니다. 반해상도 옵션은 접촉 표본이 0이면 효과가 없습니다. [설정·측정 결과](https://github.com/mazelines/UE6-PRT-GI/wiki/SurfelPlus-Experiments)를 참고하세요.
+
+곡면의 프로브 경계 비교에는 `r.PRTGI.HemisphereTransition 0`을 사용하고, 확인 후 기본값인 `r.PRTGI.HemisphereTransition 0.2`로 복원하세요. 이 설정은 다시 사전 계산할 필요 없이 적용됩니다. [코드와 비교 결과](https://github.com/mazelines/UE6-PRT-GI/wiki/Curved-Surface-Interpolation)를 참고하세요.

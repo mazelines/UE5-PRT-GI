@@ -13,7 +13,7 @@
 
 포함된 예제 맵의 기본 프로필은 일시적으로 `r.Lumen.HardwareRayTracing=1`, `r.Lumen.ScreenProbeGather.ScreenTraces=0`, `r.EyeAdaptation.CachedLightingPreExposure=8`을 적용하며, 맵을 벗어나면 이전 값으로 복원합니다. 따라서 예제의 Lumen 비교는 확산광 화면 추적을 끈 상태로 이루어집니다. 이 설정만으로 프로젝트에 없는 하드웨어 레이 트레이싱 지원이 활성화되지는 않습니다.
 
-독립 검증에 사용한 설정은 [showcase-renderer-settings.ini](https://github.com/mazelines/UE5-PRT-GI/blob/ue6/Plugins/PRTGI/docs/showcase-renderer-settings.ini)에 있습니다. 필요한 항목만 프로젝트에 반영하세요. 이 파일은 자동으로 적용되지 않으며, 프로젝트 설정 전체를 이 파일로 덮어쓰면 안 됩니다.
+독립 검증에 사용한 설정은 [showcase-renderer-settings.ini](https://github.com/mazelines/UE6-PRT-GI/blob/ue6/Plugins/PRTGI/docs/showcase-renderer-settings.ini)에 있습니다. 필요한 항목만 프로젝트에 반영하세요. 이 파일은 자동으로 적용되지 않으며, 프로젝트 설정 전체를 이 파일로 덮어쓰면 안 됩니다.
 
 예제는 UE DirectionalLight 하나를 공유합니다. 박스의 기존 면광원 영역은 개구부로 교체했으며, 관찰을 위한 전면 개구부는 유지했습니다.
 
@@ -25,4 +25,4 @@
 | PRT_ShinyBox | 면당 16×16 해상도. 검사한 프로브 878개 중 21개를 캡처 경고와 함께 제외 |
 | PRT_MetallicBox | 면당 16×16 해상도, 프로브 간격 40 cm, 전송 셀 크기 2 cm. 검사한 프로브 2,212개 중 77개를 캡처 경고와 함께 제외 |
 
-곡면의 원형 경계를 완화하는 `r.PRTGI.HemisphereTransition` 기본값은 0.2입니다. [곡면 보간 개선](https://github.com/mazelines/UE5-PRT-GI/wiki/Curved-Surface-Interpolation)에 코드와 전후 비교를 정리했습니다.
+곡면의 원형 경계를 완화하는 `r.PRTGI.HemisphereTransition` 기본값은 0.2입니다. [곡면 보간 개선](https://github.com/mazelines/UE6-PRT-GI/wiki/Curved-Surface-Interpolation)에 코드와 전후 비교를 정리했습니다.

@@ -10,17 +10,17 @@ UE6 브랜치의 ColorBox 흰 구체에서 보이던 원형 경계를 조사하�
 
 **변경 전 — 전환 폭 0**
 
-![변경 전: 흰 구체의 원형 경계](https://raw.githubusercontent.com/mazelines/UE5-PRT-GI/ue6/Plugins/PRTGI/docs/images/prt-gi-curved-before.png)
+![변경 전: 흰 구체의 원형 경계](https://raw.githubusercontent.com/mazelines/UE6-PRT-GI/ue6/Plugins/PRTGI/docs/images/prt-gi-curved-before.png)
 
 **변경 후 — 전환 폭 0.2**
 
-![변경 후: 연속 가중치를 적용한 흰 구체](https://raw.githubusercontent.com/mazelines/UE5-PRT-GI/ue6/Plugins/PRTGI/docs/images/prt-gi-curved-after.png)
+![변경 후: 연속 가중치를 적용한 흰 구체](https://raw.githubusercontent.com/mazelines/UE6-PRT-GI/ue6/Plugins/PRTGI/docs/images/prt-gi-curved-after.png)
 
 두 이미지는 같은 카메라·조명·노출 설정으로 촬영한 실제 에디터 화면입니다. 구체의 밝은 직사광 영역은 유지됩니다.
 
 ## 실제 코드 변경
 
-[PRTGI.cpp](https://github.com/mazelines/UE5-PRT-GI/blob/ue6/Plugins/PRTGI/Source/PRTGI/Private/PRTGI.cpp)의 `CVarPRTHemisphereTransition` 기본값과 설명을 수정했습니다. 아래 코드는 변경 부분만 축약한 것입니다.
+[PRTGI.cpp](https://github.com/mazelines/UE6-PRT-GI/blob/ue6/Plugins/PRTGI/Source/PRTGI/Private/PRTGI.cpp)의 `CVarPRTHemisphereTransition` 기본값과 설명을 수정했습니다. 아래 코드는 변경 부분만 축약한 것입니다.
 
 ```cpp
 // 이전
@@ -30,14 +30,14 @@ CVarPRTHemisphereTransition(TEXT("r.PRTGI.HemisphereTransition"), 0.f, ...);
 CVarPRTHemisphereTransition(TEXT("r.PRTGI.HemisphereTransition"), .2f, ...);
 ```
 
-[DefaultEngine.ini](https://github.com/mazelines/UE5-PRT-GI/blob/ue6/Config/DefaultEngine.ini)의 프로젝트 설정에도 같은 값을 명시했습니다.
+[DefaultEngine.ini](https://github.com/mazelines/UE6-PRT-GI/blob/ue6/Config/DefaultEngine.ini)의 프로젝트 설정에도 같은 값을 명시했습니다.
 
 ```ini
 [ConsoleVariables]
 r.PRTGI.HemisphereTransition=0.2
 ```
 
-렌더 스레드는 이 값을 0~0.5 범위로 제한해 셰이더에 전달합니다. [PRTGIApply.usf](https://github.com/mazelines/UE5-PRT-GI/blob/ue6/Plugins/PRTGI/Shaders/Private/PRTGIApply.usf)의 `SampleVolume`에는 다음 계산이 이미 있었습니다. 이번 셰이더 파일 변경은 원인을 설명하는 주석 수정입니다.
+렌더 스레드는 이 값을 0~0.5 범위로 제한해 셰이더에 전달합니다. [PRTGIApply.usf](https://github.com/mazelines/UE6-PRT-GI/blob/ue6/Plugins/PRTGI/Shaders/Private/PRTGIApply.usf)의 `SampleVolume`에는 다음 계산이 이미 있었습니다. 이번 셰이더 파일 변경은 원인을 설명하는 주석 수정입니다.
 
 ```hlsl
 float FrontDistance = dot(ProbePosition - Position, SurfaceNormal);
@@ -81,7 +81,7 @@ UE6 Win64 Development Editor에서 같은 카메라로 전환 폭 0과 0.2를 �
 
 에디터 빌드는 성공했습니다. 실행 중인 에디터에서는 기존 셰이더 경로에 새 콘솔 값을 적용해 확인했고, C++ 기본값 변경은 별도 접미사 모듈로 빌드했습니다. 에디터를 강제로 재시작하거나 사용자의 맵을 저장하지 않았습니다. 성능 측정과 새 Path Tracing 정확도 평가는 이번 범위에 포함하지 않았습니다.
 
-측정 영역, 카메라, 이미지 해시, 비교 조건은 [검증 기록 JSON](https://github.com/mazelines/UE5-PRT-GI/blob/ue6/Plugins/PRTGI/Tools/validation_curved_surface.json)에 있습니다. 이전 v6·바운스 검증 기록은 전환 폭 0에서 측정한 과거 결과로 유지합니다.
+측정 영역, 카메라, 이미지 해시, 비교 조건은 [검증 기록 JSON](https://github.com/mazelines/UE6-PRT-GI/blob/ue6/Plugins/PRTGI/Tools/validation_curved_surface.json)에 있습니다. 이전 v6·바운스 검증 기록은 전환 폭 0에서 측정한 과거 결과로 유지합니다.
 
 ## 에디터에서 재현하기
 

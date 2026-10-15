@@ -21,11 +21,16 @@
 | Near Clip Cm | 프로브 캡처의 근거리 클리핑 거리. 기본 1 cm, 범위 0.01~10 cm. 주 카메라의 Near Clip과 별개 |
 | Capture Resolution | 캡처 면당 해상도. 기본 16, 범위 4~32. 높일수록 캡처 비용 증가 |
 | Transport Cell Size | 정적 표면을 묶는 단위 크기. 기본 2 cm, 범위 1~100 cm. 작을수록 대체로 데이터와 계산량 증가 |
+| Transport Min Throughput | 기본 0.01. 처음 4회 이후 누적 RGB 반사율 최댓값이 임계값 미만이면 경로 종료. 0이면 이 종료 조건 해제. 변경 시 재계산 |
+| Transport Paths Per Sample | 기본 1, 범위 1~16. 캡처 표본당 실제 전송 경로 수이며 적응형 모드에서는 각 프로브의 평균 예산. 변경 시 재계산 |
+| Adaptive Transport Sampling | 기본 false. 경로 수 2 이상에서 별도 예비 경로 2개를 이용해 실제 경로를 배분. 예비 경로는 최종 계수에서 제외하며 빌드 비용은 추가됨. 변경 시 재계산 |
 | Blend Face / Distance | 전환에 사용할 면 하나와 거리(cm). 0=없음, 1/2=−/+X, 3/4=−/+Y, 5/6=−/+Z. 전환이 필요한 개구부에만 설정 |
 | Display Mode | Hidden, Positions, Lighting. Lighting은 각 프로브의 조명 색상 표시 |
 | Probe Radius | 시각화 구체의 반지름(cm). 실제 샘플링 위치에는 영향 없음 |
 
 볼륨은 현재 **축에 정렬된 형태**이며 회전은 지원하지 않습니다. 각 축에는 최대 32개의 프로브를 배치할 수 있습니다. 한도를 넘으면 간격을 넓히거나 볼륨을 나누세요.
+
+적응형 옵션은 품질 향상을 보장하지 않습니다. [SurfelPlus 기반 실험](https://github.com/mazelines/UE6-PRT-GI/wiki/SurfelPlus-Experiments)의 균등·적응형 비교와 v8 캐시 호환 조건을 확인하세요. 표본 수는 바운스 수와 별개이며 런타임 기본 바운스는 6회입니다.
 
 별도로 볼륨당 **캡처 샘플 4,000,000개** 제한이 있습니다. `ProbeCounts.X × ProbeCounts.Y × ProbeCounts.Z × 6 × CaptureResolution²`가 이 값을 넘으면 안 됩니다. 기본 해상도 16에서는 축별 제한을 지키면서 총 2,604개까지 배치할 수 있습니다. 한도를 넘으면 캡처 해상도를 낮추거나, 프로브 간격을 넓히거나, 볼륨을 나누세요.
 

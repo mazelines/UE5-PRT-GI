@@ -2,4 +2,5 @@
 
 - PRT는 선택한 DirectionalLight 하나에 의한 간접 확산광을 계산합니다. Point, Spot, Rect Light, SkyLight, 발광 머티리얼은 이 전송 계산의 광원으로 사용되지 않습니다. 플러그인은 스페큘러 GI나 반사를 제공하지 않습니다.
 - 전송에 사용하는 지오메트리와 머티리얼은 정적 상태여야 합니다. 런타임 광원이 바뀌면 GPU 가림 계산에 캐시된 지오메트리를 재사용합니다. 움직이는 차폐물은 캐시된 전송에 자동으로 반영되지 않습니다.
-- 곡면에서 프로브의 반구 제외 경계가 고리처럼 보이던 현상은 `r.PRTGI.HemisphereTransition=0.2`를 기본으로 활성화해 완화했습니다. 기존 연속 가중치 경로를 사용하는 변경이며, 벽 차폐 검사는 유지합니다. 원인·코드·전후 비교는 [곡면 보간 개선](https://github.com/mazelines/UE5-PRT-GI/wiki/Curved-Surface-Interpolation)에 있습니다. SH 표현, 프로브 밀도와 캡처 오류 등으로 다른 얼룩이 남거나 Lumen과 밝기가 다를 수 있으므로 실제 장면에서 확인하세요.
+- SurfelPlus 기반 옵션은 정적 전송의 표본 배분과 접촉 차폐 비용을 실험한 기능입니다. 동적 Surfel 관리·정반사 GI·시간 이력 필터를 추가하지 않았습니다. 적응형 방식에는 예비 경로 비용이 들며, 작은 로컬 검증에서는 같은 시작 경로 수의 균등 배분보다 계수 차이가 컸습니다. 반해상도 접촉 차폐도 시점에 따라 이득과 화질 차이가 달라 두 옵션 모두 기본 비활성화 상태를 유지합니다. [측정 조건과 한계](https://github.com/mazelines/UE6-PRT-GI/wiki/SurfelPlus-Experiments)를 확인하세요.
+- 곡면에서 프로브의 반구 제외 경계가 고리처럼 보이던 현상은 `r.PRTGI.HemisphereTransition=0.2`를 기본으로 활성화해 완화했습니다. 기존 연속 가중치 경로를 사용하는 변경이며, 벽 차폐 검사는 유지합니다. 원인·코드·전후 비교는 [곡면 보간 개선](https://github.com/mazelines/UE6-PRT-GI/wiki/Curved-Surface-Interpolation)에 있습니다. SH 표현, 프로브 밀도와 캡처 오류 등으로 다른 얼룩이 남거나 Lumen과 밝기가 다를 수 있으므로 실제 장면에서 확인하세요.
