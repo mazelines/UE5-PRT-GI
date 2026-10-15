@@ -1,0 +1,690 @@
+{
+  "date": "2026-10-15",
+  "engine": "Unreal Engine 6.0",
+  "base_commit": "fd21e9f",
+  "status": "Experimental; default settings unchanged",
+  "sources": {
+    "project": "https://wangruipeng.com/SurfelPlus/",
+    "reference_code_commit": "https://github.com/WANG-Ruipeng/SurfelPlus/tree/33cdd8bb7cea486c4ef53d1c00bc04e5f9a239bf",
+    "poster": "https://doi.org/10.1145/3721250.3742969"
+  },
+  "implemented": [
+    "Probe accepted count, effective weighted count and dominant-weight diagnostics (Debug 5..7)",
+    "Optional half-resolution static contact occlusion with normal/plane-guided reconstruction and full-resolution edge fallback",
+    "Optional offline multi-path transport and independent two-pilot allocation; v8 settings and path counters",
+    "Preserve queued builds when sample settings change immediately before Build Precomputation"
+  ],
+  "defaults": {
+    "runtime_bounces": 6,
+    "paths_per_sample": 1,
+    "adaptive_sampling": false,
+    "contact_half_resolution": 0,
+    "host_contact_samples": 8
+  },
+  "automation": {
+    "passed_tests": [
+      "PRTGI.Capture.ConsoleScope",
+      "PRTGI.Integration.EditorPIECacheIdentity",
+      "PRTGI.Math.ConstantRadianceProducesPiIrradiance",
+      "PRTGI.Math.FibonacciProjectionRecoversSH3",
+      "PRTGI.MultiBounce.AdaptiveBudget",
+      "PRTGI.MultiBounce.AnalyticTwoPlanes",
+      "PRTGI.MultiBounce.MaterialChartIsolation",
+      "PRTGI.MultiBounce.SurfaceBindingAndThinOccluder",
+      "PRTGI.Settings.MapProfileIsolation",
+      "PRTGI.Surfel.CaptureAuditGrazing",
+      "PRTGI.Surfel.CubeAxialDepth",
+      "PRTGI.Surfel.PartialCaptureAudit",
+      "PRTGI.Surfel.RelightAndPersistence",
+      "PRTGI.Visibility.CapturedPlaneMapping",
+      "PRTGI.Visibility.NearClipSafety"
+    ],
+    "count": 15,
+    "condition": "Final full PRTGI suite passed all 15 tests in one run with existing CommonUI.Debug.CheckGameViewportClientValid=0; restored to 1 afterwards. This suppresses an unrelated host CommonUI viewport-client warning during PIE. Earlier run with guard enabled failed that PIE test.",
+    "log": "Saved/Logs/PRTGI-surfelplus-verified-editor.log"
+  },
+  "render": {
+    "level": "/PRTGI/Maps/PRTGI_Showcase",
+    "gpu": "NVIDIA GeForce RTX 4090",
+    "indirect_only": true,
+    "bounces": 6,
+    "contact_samples": 8,
+    "probe_visibility": 1,
+    "hemisphere_transition": 0.2,
+    "captures": {
+      "wide": {
+        "shape": [
+          639,
+          1853,
+          3
+        ],
+        "metrics": {
+          "pixels": 1184067,
+          "rgb_rmse": 129.87190416587933,
+          "rgb_relative_rmse": 0.033687149087277955,
+          "rgb_mae": 40.19464181175661,
+          "reference_mean_luminance": 2171.3957555227666,
+          "candidate_mean_luminance": 2171.4604961393306,
+          "relative_luminance_bias": 2.9815208212937375e-05
+        }
+      },
+      "sphere": {
+        "shape": [
+          639,
+          1853,
+          3
+        ],
+        "metrics": {
+          "pixels": 1184067,
+          "rgb_rmse": 158.0633795303069,
+          "rgb_relative_rmse": 0.06041132432731467,
+          "rgb_mae": 60.016645184866206,
+          "reference_mean_luminance": 2147.337233501073,
+          "candidate_mean_luminance": 2147.7719939544972,
+          "relative_luminance_bias": 0.00020246491638164306
+        }
+      }
+    },
+    "capture_conditions": "PreTonemapHDRColor 1853x639, pre-exposure override 1, HighResScreenshotDelay 16. One completed capture per mode/view; full-resolution 8-ray contact is the reference, NOT path tracing. Relative RMSE reflects sampling/reconstruction difference, not improved physical accuracy.",
+    "gpu_conditions": "Five alternating ProfileGPU captures per mode/view, no screenshot-triggered duplicate frame; 1.2 s settle per switch. TSR input 1671x577, output 1853x639; AA method 4, ScreenPercentage 0 (editor policy), t.MaxFPS 60, foreground throttling disabled, debug 0, pre-exposure override 0. Half mode cost sums Contact Half and Indirect Only. First wide-half sample is a 9.196 ms outlier and is retained; medians do not establish statistical significance.",
+    "gpu_results": [
+      {
+        "view": "wide",
+        "modes": {
+          "0": {
+            "frames": [
+              {
+                "apply_ms": 3.486,
+                "combined_ms": 3.486
+              },
+              {
+                "apply_ms": 3.397,
+                "combined_ms": 3.397
+              },
+              {
+                "apply_ms": 3.503,
+                "combined_ms": 3.503
+              },
+              {
+                "apply_ms": 3.479,
+                "combined_ms": 3.479
+              },
+              {
+                "apply_ms": 3.361,
+                "combined_ms": 3.361
+              }
+            ],
+            "median_combined_ms": 3.479
+          },
+          "1": {
+            "frames": [
+              {
+                "contact_ms": 4.112,
+                "apply_ms": 5.084,
+                "combined_ms": 9.196
+              },
+              {
+                "contact_ms": 1.577,
+                "apply_ms": 1.877,
+                "combined_ms": 3.4539999999999997
+              },
+              {
+                "contact_ms": 1.56,
+                "apply_ms": 1.852,
+                "combined_ms": 3.412
+              },
+              {
+                "contact_ms": 1.597,
+                "apply_ms": 1.804,
+                "combined_ms": 3.401
+              },
+              {
+                "contact_ms": 1.843,
+                "apply_ms": 1.661,
+                "combined_ms": 3.504
+              }
+            ],
+            "median_combined_ms": 3.4539999999999997
+          }
+        }
+      },
+      {
+        "view": "sphere",
+        "modes": {
+          "0": {
+            "frames": [
+              {
+                "apply_ms": 5.204,
+                "combined_ms": 5.204
+              },
+              {
+                "apply_ms": 3.817,
+                "combined_ms": 3.817
+              },
+              {
+                "apply_ms": 3.8,
+                "combined_ms": 3.8
+              },
+              {
+                "apply_ms": 3.779,
+                "combined_ms": 3.779
+              },
+              {
+                "apply_ms": 3.732,
+                "combined_ms": 3.732
+              }
+            ],
+            "median_combined_ms": 3.8
+          },
+          "1": {
+            "frames": [
+              {
+                "contact_ms": 1.351,
+                "apply_ms": 1.747,
+                "combined_ms": 3.098
+              },
+              {
+                "contact_ms": 1.431,
+                "apply_ms": 1.145,
+                "combined_ms": 2.576
+              },
+              {
+                "contact_ms": 1.273,
+                "apply_ms": 0.959,
+                "combined_ms": 2.2319999999999998
+              },
+              {
+                "contact_ms": 1.508,
+                "apply_ms": 1.101,
+                "combined_ms": 2.609
+              },
+              {
+                "contact_ms": 1.501,
+                "apply_ms": 1.167,
+                "combined_ms": 2.668
+              }
+            ],
+            "median_combined_ms": 2.609
+          }
+        }
+      }
+    ]
+  },
+  "sampling": {
+    "fixture": {
+      "center_cm": [
+        60,
+        665,
+        357.2
+      ],
+      "extent_cm": [
+        50,
+        50,
+        50
+      ],
+      "spacing_cm": [
+        100,
+        100,
+        100
+      ],
+      "inset_cm": [
+        5,
+        5,
+        5
+      ],
+      "capture_resolution": 4,
+      "probes": 8,
+      "valid_probes": 8,
+      "base_samples": 741,
+      "transport_cell_cm": 2,
+      "max_bounces": 12,
+      "cutoff": 0.01
+    },
+    "builds": [
+      {
+        "label": "uniform1",
+        "quality": {
+          "path": "uniform1.multi",
+          "cache_version": 8,
+          "max_bounces": 12,
+          "min_throughput": 0.009999999776482582,
+          "terminated_low_throughput": [
+            0,
+            0,
+            0,
+            7,
+            111,
+            40,
+            98,
+            41,
+            32,
+            33,
+            1,
+            0
+          ],
+          "paths_per_sample": 1,
+          "sampling_mode": 0,
+          "pilot_paths": 0,
+          "production_paths": 741,
+          "geometry_signature": "6293844805970134940",
+          "base_crc": 2325649625,
+          "cell_size_cm": 2.0,
+          "probes": 8,
+          "sources": 3828,
+          "triangles": 11400,
+          "terms": 3869,
+          "paths": [
+            741,
+            683,
+            615,
+            539,
+            477,
+            322,
+            250,
+            129,
+            74,
+            36,
+            2,
+            1
+          ],
+          "surface_hits": 3128,
+          "unmapped_hits": 0,
+          "unmapped_hit_fraction": 0.0,
+          "bound_samples": 726,
+          "unbound_samples": 15,
+          "unmapped_by_bounce": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "material_hits": 3128,
+          "corrected_samples": 718,
+          "max_capture_correction_cm": 2.4800209999084473,
+          "fp16_relative_error": 0.00017948993188006488,
+          "build_seconds": 0.022358696907758713,
+          "cache_mib": 1.1169509887695312
+        }
+      },
+      {
+        "label": "uniform4",
+        "quality": {
+          "path": "uniform4.multi",
+          "cache_version": 8,
+          "max_bounces": 12,
+          "min_throughput": 0.009999999776482582,
+          "terminated_low_throughput": [
+            0,
+            0,
+            0,
+            37,
+            384,
+            168,
+            353,
+            169,
+            136,
+            78,
+            14,
+            0
+          ],
+          "paths_per_sample": 4,
+          "sampling_mode": 0,
+          "pilot_paths": 0,
+          "production_paths": 2964,
+          "geometry_signature": "6293844805970134940",
+          "base_crc": 2325649625,
+          "cell_size_cm": 2.0,
+          "probes": 8,
+          "sources": 12501,
+          "triangles": 11400,
+          "terms": 12831,
+          "paths": [
+            2964,
+            2706,
+            2421,
+            2128,
+            1825,
+            1234,
+            914,
+            477,
+            263,
+            112,
+            29,
+            12
+          ],
+          "surface_hits": 12121,
+          "unmapped_hits": 0,
+          "unmapped_hit_fraction": 0.0,
+          "bound_samples": 726,
+          "unbound_samples": 15,
+          "unmapped_by_bounce": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "material_hits": 12121,
+          "corrected_samples": 718,
+          "max_capture_correction_cm": 2.4800209999084473,
+          "fp16_relative_error": 0.00017759352821933845,
+          "build_seconds": 0.048995498567819595,
+          "cache_mib": 2.1933059692382812
+        }
+      },
+      {
+        "label": "adaptive2",
+        "quality": {
+          "path": "adaptive2.multi",
+          "cache_version": 8,
+          "max_bounces": 12,
+          "min_throughput": 0.009999999776482582,
+          "terminated_low_throughput": [
+            0,
+            0,
+            0,
+            20,
+            203,
+            91,
+            177,
+            103,
+            72,
+            37,
+            6,
+            0
+          ],
+          "paths_per_sample": 2,
+          "sampling_mode": 1,
+          "pilot_paths": 1482,
+          "production_paths": 1482,
+          "geometry_signature": "6293844805970134940",
+          "base_crc": 2325649625,
+          "cell_size_cm": 2.0,
+          "probes": 8,
+          "sources": 6800,
+          "triangles": 11400,
+          "terms": 6898,
+          "paths": [
+            1482,
+            1367,
+            1234,
+            1081,
+            936,
+            634,
+            469,
+            248,
+            129,
+            50,
+            10,
+            3
+          ],
+          "surface_hits": 6161,
+          "unmapped_hits": 0,
+          "unmapped_hit_fraction": 0.0,
+          "bound_samples": 726,
+          "unbound_samples": 15,
+          "unmapped_by_bounce": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "material_hits": 6161,
+          "corrected_samples": 718,
+          "max_capture_correction_cm": 2.4800209999084473,
+          "fp16_relative_error": 0.00017786059497059876,
+          "build_seconds": 0.04564470052719116,
+          "cache_mib": 1.4832229614257812
+        }
+      },
+      {
+        "label": "uniform16",
+        "quality": {
+          "path": "uniform16.multi",
+          "cache_version": 8,
+          "max_bounces": 12,
+          "min_throughput": 0.009999999776482582,
+          "terminated_low_throughput": [
+            0,
+            0,
+            0,
+            112,
+            1612,
+            690,
+            1410,
+            639,
+            534,
+            334,
+            46,
+            0
+          ],
+          "paths_per_sample": 16,
+          "sampling_mode": 0,
+          "pilot_paths": 0,
+          "production_paths": 11856,
+          "geometry_signature": "6293844805970134940",
+          "base_crc": 2325649625,
+          "cell_size_cm": 2.0,
+          "probes": 8,
+          "sources": 44564,
+          "triangles": 11400,
+          "terms": 48919,
+          "paths": [
+            11856,
+            10868,
+            9674,
+            8501,
+            7358,
+            4919,
+            3640,
+            1873,
+            1047,
+            450,
+            96,
+            41
+          ],
+          "surface_hits": 48467,
+          "unmapped_hits": 0,
+          "unmapped_hit_fraction": 0.0,
+          "bound_samples": 726,
+          "unbound_samples": 15,
+          "unmapped_by_bounce": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "material_hits": 48467,
+          "corrected_samples": 718,
+          "max_capture_correction_cm": 2.4800209999084473,
+          "fp16_relative_error": 0.00017701915843853637,
+          "build_seconds": 0.19107159972190857,
+          "cache_mib": 6.352912902832031
+        }
+      }
+    ],
+    "comparison": {
+      "method": "SH9 RGB coefficient comparison, 6 bounces, white directional Lux=pi, source geometric hemisphere and shading normal cosine, sun shadow rays DISABLED. Uniform16 is a finite reference, not ground truth; uniform4/adaptive2 share prefixes with uniform16 production paths, so errors are correlated and favor shared samples. One fixed seed and one small fixture, not a variance study.",
+      "lights_toward_source": [
+        [
+          0,
+          0,
+          1
+        ],
+        [
+          0.6,
+          0,
+          0.8
+        ],
+        [
+          0,
+          0.8,
+          0.6
+        ],
+        [
+          -0.6,
+          -0.48,
+          0.64
+        ]
+      ],
+      "results": [
+        {
+          "label": "uniform1",
+          "aggregate_relative_l2": 0.08889651729908347,
+          "by_light_relative_l2": [
+            0.1028979433135888,
+            0.07979809296314219,
+            0.09120189642351047,
+            0.08419021696974405
+          ]
+        },
+        {
+          "label": "uniform4",
+          "aggregate_relative_l2": 0.02873218194888432,
+          "by_light_relative_l2": [
+            0.03227414177472204,
+            0.025591443221809018,
+            0.026318867646655426,
+            0.030073548271673856
+          ]
+        },
+        {
+          "label": "adaptive2",
+          "aggregate_relative_l2": 0.046890772117659976,
+          "by_light_relative_l2": [
+            0.056278347767757746,
+            0.042658670410340535,
+            0.042500667083339,
+            0.04589240607210713
+          ]
+        }
+      ]
+    },
+    "conclusion": "In this fixture, uniform4 (2.87%) has lower coefficient discrepancy than adaptive2+two pilots (4.69%) at equal starting-path count. Adaptive remains opt-in; no equal-time or variance-reduction claim. Both compare against correlated finite uniform16, not ground truth. Build_seconds measures transport work only, excludes geometry capture/material baking and IO."
+  },
+  "limitations": [
+    "Static geometry, diffuse transport, one directional light; no dynamic-surface update, sky/emissive transport or glossy GI added",
+    "No temporal filtering/MSME applied to unchanged precomputed coefficients",
+    "No original SurfelPlus end-to-end performance comparison",
+    "Half resolution can regress on edge-heavy views and changes contact noise; defaults remain full resolution",
+    "Pilot proxy is light-independent sparse triangle/order response, not a radiance error estimator; pilots add cost",
+    "Existing six level caches preserved; temporary 8-probe volume removed without saving the level; generated caches remain ignored"
+  ],
+  "artifacts_local_only": "Saved/PRTGISurfelPlus (HDR captures, raw GPU logs, temporary sampling caches); Saved/Logs/PRTGI-surfelplus-editor.log",
+  "immediate_build_regression": {
+    "passed": true,
+    "scenario": "Spawn temporary 8-probe volume, build uniform4; edit paths=2 and adaptive=true then request Build Precomputation in the same Python call, without a manager tick between them. Rebuild completed and v8 metadata/CRC matched requested settings. Temporary actor and orphan caches removed.",
+    "result": {
+      "cache_version": 8,
+      "max_bounces": 12,
+      "min_throughput": 0.009999999776482582,
+      "terminated_low_throughput": [
+        0,
+        0,
+        0,
+        38,
+        65,
+        161,
+        137,
+        61,
+        81,
+        54,
+        26,
+        0
+      ],
+      "paths_per_sample": 2,
+      "sampling_mode": 1,
+      "pilot_paths": 1482,
+      "production_paths": 1482,
+      "geometry_signature": "6293844805970134940",
+      "base_crc": 2084569144,
+      "cell_size_cm": 2.0,
+      "probes": 8,
+      "sources": 7178,
+      "triangles": 11400,
+      "terms": 7296,
+      "paths": [
+        1482,
+        1363,
+        1234,
+        1072,
+        910,
+        748,
+        510,
+        316,
+        215,
+        116,
+        52,
+        23
+      ],
+      "surface_hits": 6559,
+      "unmapped_hits": 0,
+      "unmapped_hit_fraction": 0.0,
+      "bound_samples": 726,
+      "unbound_samples": 15,
+      "unmapped_by_bounce": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "material_hits": 6559,
+      "corrected_samples": 718,
+      "max_capture_correction_cm": 2.4800209999084473,
+      "fp16_relative_error": 0.00018545097140309876,
+      "build_seconds": 0.043308600783348083,
+      "cache_mib": 1.5305862426757812
+    }
+  },
+  "build": {
+    "result": "Succeeded",
+    "target": "UE_PRT_GIEditor Win64 Development",
+    "log": "Saved/Logs/PRTGI-surfelplus-build-final.log",
+    "module_suffix": 6156
+  },
+  "editor_restored": {
+    "six_original_volumes_active": true,
+    "effective_bounces": 6,
+    "production_paths_per_sample": 1,
+    "adaptive_sampling": false,
+    "contact_half_resolution": 0,
+    "dirty_map_packages": 0,
+    "dirty_content_packages": 0,
+    "original_camera_and_cvars_restored": true,
+    "background_throttling_restored": true
+  }
+}

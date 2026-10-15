@@ -42,7 +42,7 @@ struct FMultiBounceData
     double QuantizationRelativeError = 0;
     int32 CorrectedSamples = 0;
     float MaxPositionCorrectionCm = 0;
-    int32 CacheVersion = 7;
+    int32 CacheVersion = 8;
     int32 BoundSamples = 0;
     int32 UnboundSamples = 0;
     int32 UnmappedByBounce[MaxTransportBounces-1] = {};
@@ -50,9 +50,13 @@ struct FMultiBounceData
     int32 MaxBounces = MaxTransportBounces;
     float MinThroughput = .01f;
     int32 TerminatedLowThroughput[MaxTransportBounces] = {};
+    int32 PathsPerSample = 1;
+    int32 SamplingMode = 0; // 0 uniform, 1 two-pilot adaptive allocation
+    int64 PilotPaths = 0;
+    int64 ProductionPaths = 0;
     FString QualityReport() const;
     bool Save(const FString& Path) const;
-    static TSharedPtr<FMultiBounceData, ESPMode::ThreadSafe> Load(const FString& Path, uint64 Signature, float CellSize, uint32 BaseCRC, float ExpectedMinThroughput=-1);
+    static TSharedPtr<FMultiBounceData, ESPMode::ThreadSafe> Load(const FString& Path, uint64 Signature, float CellSize, uint32 BaseCRC, float ExpectedMinThroughput=-1, int32 ExpectedPaths=-1, int32 ExpectedSampling=-1);
     void EvaluateCPU(const FVector3f& Sun, const FVector3f& Color, float Lux, bool Shadows, float Bias,
         int32 Bounces, TArray<FVector4f>& Output) const;
     void EvaluateUnclusteredCPU(const FSurfelVolume& Base,const FVector3f& Sun,const FVector3f& Color,
@@ -62,12 +66,14 @@ struct FMultiBounceData
 struct FMultiBounceBuild
 {
     float MinThroughput = .01f;
+    int32 PathsPerSample = 1;
+    int32 SamplingMode = 0;
     TAtomic<bool> Cancelled{false};
     TAtomic<int32> CompletedProbes{0};
     TFuture<TSharedPtr<FMultiBounceData, ESPMode::ThreadSafe>> Future;
 };
 TSharedPtr<FMultiBounceBuild, ESPMode::ThreadSafe> BuildMultiBounce(UWorld* World,
-    TSharedPtr<FSurfelVolume> Base, float CellSize, float MinThroughput=.01f);
+    TSharedPtr<FSurfelVolume> Base, float CellSize, float MinThroughput=.01f, int32 PathsPerSample=1, bool Adaptive=false);
 
 class FMultiBounceGPU
 {

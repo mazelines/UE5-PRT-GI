@@ -22,7 +22,7 @@
 | 可见性与接触 | 首次命中平面的 Probe 可见性 | 增加深度矩、静态 BVH 线段对比及短距离接触遮挡。默认仍为平面方案；深度矩增大墙面斑纹，因此未作为默认值 |
 | 曲面接收光照的插值 | 立即排除接收表面后方的 Probe，导致边界处贡献不连续 | 将 `r.PRTGI.HemisphereTransition` 从 0 改为 0.2，默认启用本分支已有的 `smoothstep` 过渡。在最小 Probe 间距的 20% 范围内平滑降低贡献，减轻球体上的圆形边界。保留后方 Probe 排除和墙体可见性检查；此设置变更无需重新预计算 |
 | 反弹次数 | 最大 4 次，默认 4 次 | 最多预计算 12 次，运行默认 6 次，支持 4/8/12 对比。保留前四阶，之后累计 RGB 吞吐量最大值低于 0.01 时提前终止；更改阈值需要重建 |
-| 诊断 | 已有缓存与传输检查 | 增加 v7 缓存及旧版读取、各阶路径/终止/材质命中统计、线性 HDR 对比工具，并扩展 GPU/CPU 验证和自动化测试。[曲面验证](Plugins/PRTGI/Tools/validation_curved_surface.json)补充同视角前后截图、可见性/接触遮挡对照实验及局部不连续性指标；该指标不是相对 Path Tracing 参考的误差 |
+| 诊断 | 已有缓存与传输检查 | 增加 v8 缓存及旧版读取、各阶路径/终止/材质命中统计、线性 HDR 对比工具，并扩展 GPU/CPU 验证和自动化测试。[曲面验证](Plugins/PRTGI/Tools/validation_curved_surface.json)补充同视角前后截图、可见性/接触遮挡对照实验及局部不连续性指标；该指标不是相对 Path Tracing 参考的误差 |
 
 本地 Showcase 验证中，六个 v7 缓存的二次表面查询遗漏均为 0，GPU/CPU 系数相对误差低于 `3.75e-5`，五项专项测试通过。ClassicBox 的提前终止对照实验减少了 5.76% 传输项和 6.71% 缓存大小，12 阶 Probe L0 能量总和降低 0.040%。**这些是本分支内部设置及缓存阶段的对比，不是与上游在完全相同条件下的整体画质/性能基准。** 条件与原始结果见[表面/接触验证](Plugins/PRTGI/Tools/validation_showcase.json)及[反弹/终止验证](Plugins/PRTGI/Tools/validation_bounces.json)。
 
@@ -31,6 +31,8 @@
 分发方式也有变化：默认文档语言为韩语，Git 不包含生成缓存。首次打开项目后，需要按下方步骤手动执行 **Build Precomputation**。
 
 ## 安装
+
+可选的 SurfelPlus 启发实验：`r.PRTGI.Debug 5/6/7` 显示有效贡献的 Probe 数量、加权有效数量与权重集中度；`r.PRTGI.ContactHalfResolution 1` 使用半宽半高的接触遮挡计算及深度/法线引导重建，边缘退回全分辨率，默认仍为 0，无需重建缓存。Volume 的 `Transport Paths Per Sample` 默认为 1（范围 1–16）；启用 `Adaptive Transport Sampling` 需至少 2，每个采集样本另追踪两条预估路径，用与光源无关的传输变化分配实际路径预算。预估贡献不加入最终结果，实际贡献按各样本的路径数归一化。均匀 4 条可与自适应 2 条加预估 2 条比较起始路径预算，实际耗时可能不同，画质改善不保证。更改采样设置需要重新执行 **Build Precomputation**；v8 保存设置与路径统计，旧 v3–v7 缓存在均匀 1 条设置下仍可读取。详见 [English README](README.en.md)。
 
 > **首次运行必须手动预计算。** Git 仓库不包含 `.prtgi`、`.surfels`、`.surfels.multi` 缓存。请用 UE6 Editor 打开项目，加载 `PRTGI_Showcase`，选择六个 `PRTProbeVolume`，执行 **Details → PRT → Build → Build Precomputation**。等待所有 Volume 完成后再比较 PRT 光照。**仅编译 C++ 项目或打开项目不会生成这些缓存。** 其他关卡也需要为所有参与的 Volume 在本地预计算。
 
@@ -168,6 +170,6 @@ PRTGI.Status
 
 `PRTGI.SetMode Offline` 是历史命令名称，表示退出动态 GI；它不会自动生成离线光照或 Path Tracing 参考图。
 
-新的 v7 缓存最多预计算 12 次反弹。`Transport Min Throughput` 默认 0.01：保留前四阶，之后在累计 RGB 吞吐量最大值低于阈值时提前终止路径；0 关闭此截断。修改阈值需要重新构建。该有偏近似不保证 1% 图像误差。旧 v3–v6 缓存仍可读取，但最多使用 4 次反弹。详细比较见 [English README](README.en.md#comparing-4-8-and-12-bounces)。
+v7 及以上缓存最多预计算 12 次反弹。`Transport Min Throughput` 默认 0.01：保留前四阶，之后在累计 RGB 吞吐量最大值低于阈值时提前终止路径；0 关闭此截断。修改阈值需要重新构建。该有偏近似不保证 1% 图像误差。旧 v3–v6 缓存仍可读取，但最多使用 4 次反弹。详细比较见 [English README](README.en.md#comparing-4-8-and-12-bounces)。
 
 曲面接收光照时，探针在表面切平面处被突然排除会形成圆形边界。`r.PRTGI.HemisphereTransition` 现在默认为 `0.2`，启用已有的连续权重过渡，同时保留可见性检查；无需重新预计算。设为 `0` 可比较旧的硬切换。此修改参考 DDGI 的连续权重原则，并未移植其完整 wrap 权重或动态 GI 系统。最新文献与对照条件见 [曲面验证记录](Plugins/PRTGI/Tools/validation_curved_surface.json)；先前的 v6 和反弹次数实验仍是过渡宽度为 0 时的历史数据。

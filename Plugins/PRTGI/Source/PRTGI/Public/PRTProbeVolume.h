@@ -47,6 +47,10 @@ public:
     float TransportCellSize = 2.0f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PRT|Build", meta=(ToolTip="After the first four bounces, stop paths whose maximum RGB throughput falls below this value. 0 disables this biased truncation; rebuild transport after changing it. This is not a lighting-error bound.", ClampMin="0", ClampMax="0.25"))
     float TransportMinThroughput = .01f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PRT|Build", meta=(ToolTip="Production paths per captured sample (average when adaptive). 1 preserves legacy sampling. Changing this requires rebuilding transport.", ClampMin="1", ClampMax="16"))
+    int32 TransportPathsPerSample = 1;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PRT|Build", meta=(ToolTip="Experimental light-independent allocation from two separate pilot paths per capture sample. Pilots add build cost and are discarded; production weights are normalized by each sample's path count. Requires Paths Per Sample >= 2 and a transport rebuild."))
+    bool bAdaptiveTransportSampling = false;
     /** 0=无过渡，1/2=-/+X，3/4=-/+Y，5/6=-/+Z。仅在开口设置过渡。 */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="PRT|Blending", meta=(ToolTip="0=none, 1/2=-/+X, 3/4=-/+Y, 5/6=-/+Z. Configure transitions only at openings.", ClampMin="0", ClampMax="6"))
     int32 BlendFace = 0;

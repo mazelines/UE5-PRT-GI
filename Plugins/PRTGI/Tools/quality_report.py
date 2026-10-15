@@ -1,4 +1,4 @@
-"""Read PRTGI v3-v7 transport quality counters without loading Unreal.
+"""Read PRTGI v3-v8 transport quality counters without loading Unreal.
 
 Example:
   python quality_report.py --output baseline.json Content/Precomputed/Volumes
@@ -38,7 +38,7 @@ def read_cache(path):
         if len(data) < 64:
             raise ValueError("Not a transport cache (possibly a Git LFS pointer)")
         magic, version = read("Ii")
-        if magic != 0x34424D50 or version not in (3, 4, 5, 6, 7):
+        if magic != 0x34424D50 or version not in (3, 4, 5, 6, 7, 8):
             raise ValueError(f"Unsupported transport header: {magic:x}, v{version}")
         view = memoryview(data)
         try:
@@ -49,6 +49,7 @@ def read_cache(path):
             raise ValueError("Payload CRC mismatch")
         signature, cell_size, probes, base_crc = read("QfiI")
         max_bounces, min_throughput = read("if") if version >= 7 else (4, 0)
+        paths_per_sample, sampling_mode, pilot_paths, production_paths = read("iiqq") if version >= 8 else (1, 0, None, None)
         counts = []
         for _ in range(3):
             count, = read("i")
@@ -73,6 +74,8 @@ def read_cache(path):
             "path": str(path), "cache_version": version,
             "max_bounces": max_bounces, "min_throughput": min_throughput,
             "terminated_low_throughput": terminated,
+            "paths_per_sample": paths_per_sample, "sampling_mode": sampling_mode,
+            "pilot_paths": pilot_paths, "production_paths": production_paths,
             "geometry_signature": str(signature), "base_crc": base_crc,
             "cell_size_cm": cell_size, "probes": probes,
             "sources": counts[0] // 3, "triangles": counts[1] // 3,

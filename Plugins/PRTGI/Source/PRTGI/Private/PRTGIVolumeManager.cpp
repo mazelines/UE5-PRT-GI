@@ -46,6 +46,8 @@ struct FPRTGIVolumeManager::FState
     int32 PublishedBounces=0;
     float MultiCell=0;
     float MultiMinThroughput=-1;
+    int32 MultiPaths=-1;
+    bool MultiAdaptive=false;
     bool bBuildIncludesCapture=false;
 };
 
@@ -187,20 +189,31 @@ bool FPRTGIVolumeManager::Tick(UWorld* World, ADirectionalLight* Light, int32 Sh
             States.Add(MoveTemp(State)); Found = &States.Last(); bDirty = true;
         }
         FState& S = **Found;
-        if(S.MultiCell!=Actor->TransportCellSize || S.MultiMinThroughput!=Actor->TransportMinThroughput)
+        if(S.MultiCell!=Actor->TransportCellSize || S.MultiMinThroughput!=Actor->TransportMinThroughput || S.MultiPaths!=Actor->TransportPathsPerSample || S.MultiAdaptive!=Actor->bAdaptiveTransportSampling)
         {
-            CancelBuild(Actor);S.Multi.Reset();S.GPU.Reset();S.LastLight.Reset();S.MultiCell=Actor->TransportCellSize;S.MultiMinThroughput=Actor->TransportMinThroughput;
-            S.GeometrySignature=0;
+            // A request made immediately after editing settings targets the new settings.
+            const bool bQueuedForNewSettings=Queue.Contains(Actor);
+            CancelBuild(Actor);
+            if(bQueuedForNewSettings)Queue.AddUnique(Actor);
+            S.Multi.Reset();S.GPU.Reset();S.LastLight.Reset();S.MultiCell=Actor->TransportCellSize;S.MultiMinThroughput=Actor->TransportMinThroughput;S.MultiPaths=Actor->TransportPathsPerSample;S.MultiAdaptive=Actor->bAdaptiveTransportSampling;
+            // Validate before consuming a queued rebuild, even inside the normal
+            // two-second validation interval; otherwise a zero signature drops it.
+            S.GeometrySignature=0;S.NextValidation=0;
         }
         FBox Grid, Receiver; FIntVector Counts; FString Error;
         const bool DuplicateId = Actors.ContainsByPredicate([&](const auto* Other) { return Other != Actor && Other->VolumeId == Actor->VolumeId; });
         if (!Actor->bEnabled || DuplicateId || !Actor->GetLayout(Grid, Receiver, Counts, Error)
             || !FMath::IsFinite(Actor->TransportCellSize) || Actor->TransportCellSize<1 || Actor->TransportCellSize>100
-            || !FMath::IsFinite(Actor->TransportMinThroughput) || Actor->TransportMinThroughput<0 || Actor->TransportMinThroughput>.25f)
+            || !FMath::IsFinite(Actor->TransportMinThroughput) || Actor->TransportMinThroughput<0 || Actor->TransportMinThroughput>.25f
+            || Actor->TransportPathsPerSample<1 || Actor->TransportPathsPerSample>16
+            || (Actor->bAdaptiveTransportSampling && Actor->TransportPathsPerSample<2))
         {
             CancelBuild(Actor);
             Actor->CacheStatus = DuplicateId ? TEXT("Duplicate VolumeId; duplicate using the editor to assign a new ID")
-                : !Actor->bEnabled ? TEXT("Disabled") : Error;
+                : !Actor->bEnabled ? TEXT("Disabled") : !Error.IsEmpty() ? Error
+                : Actor->bAdaptiveTransportSampling && Actor->TransportPathsPerSample<2
+                    ? TEXT("Adaptive transport requires at least 2 production paths per sample")
+                    : TEXT("Transport parameters are outside their supported ranges");
             Actor->BuildStage=Actor->bEnabled?TEXT("Invalid configuration; cannot build"):TEXT("Disabled");
             Actor->BuildProgress=0;
             Actor->ClearProbeSpheres(); Actor->ValidProbes = Actor->InvalidProbes = 0;
@@ -246,7 +259,7 @@ bool FPRTGIVolumeManager::Tick(UWorld* World, ADirectionalLight* Light, int32 Sh
                 }
                 if (BakeActor.Get() == Actor && Bake && Bake->SceneSignature != GeometrySig) CancelBuild(Actor);
                 S.GeometrySignature = GeometrySig; S.MatrixSignature = MatrixSig; bDirty = true; S.bVisualDirty = true;
-                if(S.Surfels)S.Multi=PRTGI::FMultiBounceData::Load(Actor->CacheFile+TEXT(".multi"),GeometrySig,Actor->TransportCellSize,PRTGI::MultiBounceBaseCRC(*S.Surfels),Actor->TransportMinThroughput);
+                if(S.Surfels)S.Multi=PRTGI::FMultiBounceData::Load(Actor->CacheFile+TEXT(".multi"),GeometrySig,Actor->TransportCellSize,PRTGI::MultiBounceBaseCRC(*S.Surfels),Actor->TransportMinThroughput,Actor->TransportPathsPerSample,Actor->bAdaptiveTransportSampling);
                 S.Render.Visibility=S.Surfels?FPRTGIProbeVisibility::Build(*S.Surfels):nullptr;
                 if(S.Surfels && S.Multi)
                 {
@@ -402,7 +415,7 @@ bool FPRTGIVolumeManager::Tick(UWorld* World, ADirectionalLight* Light, int32 Sh
             {
                 (*S)->bBuildIncludesCapture=false;
                 Actor->BuildProgress=0;Actor->BuildStage=TEXT("Stage 1/1: preparing 1-12 bounce precomputation (geometry cache reused)");
-                (*S)->MultiJob=PRTGI::BuildMultiBounce(World,(*S)->Surfels,Actor->TransportCellSize,Actor->TransportMinThroughput);
+                (*S)->MultiJob=PRTGI::BuildMultiBounce(World,(*S)->Surfels,Actor->TransportCellSize,Actor->TransportMinThroughput,Actor->TransportPathsPerSample,Actor->bAdaptiveTransportSampling);
                 Actor->CacheStatus=TEXT("Building static 1..12 bounce paths; reusing geometry");
             }
             else
@@ -444,7 +457,7 @@ bool FPRTGIVolumeManager::Tick(UWorld* World, ADirectionalLight* Light, int32 Sh
                     (*State)->Multi.Reset();(*State)->GPU.Reset();(*State)->NearClipMask.Reset();
                     (*State)->bBuildIncludesCapture=true;
                     Actor->BuildProgress=.5f;Actor->BuildStage=TEXT("Stage 2/2: preparing 1-12 bounce precomputation (geometry capture complete)");
-                    (*State)->MultiJob=PRTGI::BuildMultiBounce(World,Bake,Actor->TransportCellSize,Actor->TransportMinThroughput);
+                    (*State)->MultiJob=PRTGI::BuildMultiBounce(World,Bake,Actor->TransportCellSize,Actor->TransportMinThroughput,Actor->TransportPathsPerSample,Actor->bAdaptiveTransportSampling);
                     UE_LOG(LogPRTVolume,Display,TEXT("Build complete: %s probes=%d samples=%d file=%s"),*Actor->GetName(),Bake->Validity.Num(),Bake->Samples.Num(),*Actor->GetCachePath());
                     bDirty=true;
                 }

@@ -61,7 +61,9 @@ namespace
     TAutoConsoleVariable<float> CVarPRTHemisphereTransition(TEXT("r.PRTGI.HemisphereTransition"),.2f,
         TEXT("Positive-hemisphere smooth transition as a fraction of the smallest probe spacing (0..0.5, default 0.2). 0 restores the legacy hard gate and can show rings on curved receivers. No rebake required."),ECVF_RenderThreadSafe);
     TAutoConsoleVariable<int32> CVarPRTDebug(TEXT("r.PRTGI.Debug"),0,
-        TEXT("0 lighting, 1 visibility acceptance, 2 interpolation support, 3 hemisphere rejection, 4 contact visibility. Red=low support/high rejection."),ECVF_RenderThreadSafe);
+        TEXT("0 lighting, 1 visibility acceptance, 2 interpolation support, 3 hemisphere acceptance, 4 contact visibility, 5 accepted probes / 16, 6 effective probes / 16, 7 one minus dominant normalized weight. 5-7 show the selected volume before boundary blending; magenta=legacy trilinear. Red=low support/high concentration."),ECVF_RenderThreadSafe);
+    TAutoConsoleVariable<int32> CVarPRTContactHalfResolution(TEXT("r.PRTGI.ContactHalfResolution"),0,
+        TEXT("Experimental contact occlusion: 0 full-resolution reference, 1 half-resolution trace with depth/normal-aware reconstruction and full-resolution edge fallback. No history and no rebake."),ECVF_RenderThreadSafe);
     TAutoConsoleVariable<int32> CVarPRTContactSamples(TEXT("r.PRTGI.ContactSamples"),0,
         TEXT("Short-range static diffuse contact occlusion rays per pixel, 0 disables, maximum 16."),ECVF_RenderThreadSafe);
     TAutoConsoleVariable<float> CVarPRTContactRadius(TEXT("r.PRTGI.ContactRadiusCm"),20.f,
@@ -188,6 +190,9 @@ namespace
         SHADER_PARAMETER(float, ContactRadius)
         SHADER_PARAMETER(float, ContactBias)
         SHADER_PARAMETER(FVector3f, ContactWorldTranslation)
+        SHADER_PARAMETER(uint32, ContactHalfResolution)
+        SHADER_PARAMETER_RDG_TEXTURE(Texture2D<float4>, ContactTexture)
+        SHADER_PARAMETER_RDG_TEXTURE_UAV(RWTexture2D<float4>, ContactOutput)
         SHADER_PARAMETER_RDG_TEXTURE_UAV(RWTexture2D<float4>, SceneColorOutput)
         SHADER_PARAMETER_SAMPLER(SamplerState, PointClampSampler)
         SHADER_PARAMETER(uint32, VolumeCount)
@@ -223,6 +228,17 @@ namespace
     };
 
     IMPLEMENT_GLOBAL_SHADER(FPRTGIApplyCS, "/Plugin/PRTGI/Private/PRTGIApply.usf", "MainCS", SF_Compute);
+
+    class FPRTGIContactCS : public FGlobalShader
+    {
+    public:
+        DECLARE_GLOBAL_SHADER(FPRTGIContactCS);
+        SHADER_USE_PARAMETER_STRUCT(FPRTGIContactCS,FGlobalShader);
+        using FParameters=FPRTGIApplyParameters;
+        static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
+        { return IsFeatureLevelSupported(Parameters.Platform,ERHIFeatureLevel::SM6); }
+    };
+    IMPLEMENT_GLOBAL_SHADER(FPRTGIContactCS,"/Plugin/PRTGI/Private/PRTGIApply.usf","ContactCS",SF_Compute);
 
     class FPRTGIPublishCS : public FGlobalShader
     {
@@ -2325,7 +2341,7 @@ private:
         Parameters->ProbeVisibilityEnabled=uint32(FMath::Clamp(CVarPRTProbeVisibility.GetValueOnRenderThread(),0,3));
         Parameters->VisibilityBiasCm=FMath::Max(.001f,CVarPRTVisibilityBias.GetValueOnRenderThread());
         Parameters->HemisphereTransition=FMath::Clamp(CVarPRTHemisphereTransition.GetValueOnRenderThread(),0.f,.5f);
-        Parameters->DebugMode=uint32(FMath::Clamp(CVarPRTDebug.GetValueOnRenderThread(),0,4));
+        Parameters->DebugMode=uint32(FMath::Clamp(CVarPRTDebug.GetValueOnRenderThread(),0,7));
         Parameters->ContactTriangles=GraphBuilder.CreateSRV(GraphBuilder.RegisterExternalBuffer(ContactTriangles_RenderThread));
         Parameters->ContactNodes=GraphBuilder.CreateSRV(GraphBuilder.RegisterExternalBuffer(ContactNodes_RenderThread));
         Parameters->ContactNodeCount=ContactGeometry?ContactGeometry->Nodes.Num()/2:0;
@@ -2341,6 +2357,26 @@ private:
         Parameters->OverwriteSceneColor = bIndirectOnly ? 1u : 0u;
         Parameters->HasTransport = bHasTransport || bHasActors ? 1u : 0u;
         Parameters->View = View.ViewUniformBuffer;
+
+        Parameters->ContactHalfResolution=CVarPRTContactHalfResolution.GetValueOnRenderThread()!=0
+            && Parameters->ContactNodeCount>0 && Parameters->ContactSamples>0
+            && Parameters->ContactRadius>0 && (Parameters->DebugMode==0 || Parameters->DebugMode==4);
+        // A bound dummy is required even when the shader's runtime branch skips it.
+        Parameters->ContactTexture=Resources.GBufferA;
+        Parameters->ContactOutput=nullptr;
+        if(Parameters->ContactHalfResolution)
+        {
+            const FIntPoint HalfSize=FIntPoint::DivideAndRoundUp(View.ViewRect.Size(),2);
+            FRDGTextureRef Contact=GraphBuilder.CreateTexture(FRDGTextureDesc::Create2D(HalfSize,
+                PF_FloatRGBA,FClearValueBinding::None,TexCreate_ShaderResource|TexCreate_UAV),TEXT("PRTGI.ContactHalf"));
+            auto* ContactParameters=GraphBuilder.AllocParameters<FPRTGIApplyParameters>();
+            *ContactParameters=*Parameters;
+            ContactParameters->ContactOutput=GraphBuilder.CreateUAV(Contact);
+            TShaderMapRef<FPRTGIContactCS> ContactShader(GetGlobalShaderMap(View.GetFeatureLevel()));
+            FComputeShaderUtils::AddPass(GraphBuilder,RDG_EVENT_NAME("PRTGI Contact Half"),ContactShader,
+                ContactParameters,FComputeShaderUtils::GetGroupCount(HalfSize,FIntPoint(8,8)));
+            Parameters->ContactTexture=Contact;
+        }
 
         TShaderMapRef<FPRTGIApplyCS> ComputeShader(GetGlobalShaderMap(View.GetFeatureLevel()));
         FComputeShaderUtils::AddPass(

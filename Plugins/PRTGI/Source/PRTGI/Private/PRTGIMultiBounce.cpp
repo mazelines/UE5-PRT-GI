@@ -35,7 +35,7 @@ uint32 MultiBounceBaseCRC(const FSurfelVolume& Base)
 namespace
 {
 constexpr uint32 MultiMagic = 0x34424D50; // PMB4, companion file; never replaces legacy geometry.
-constexpr int32 MultiVersion = 7;
+constexpr int32 MultiVersion = 8;
 constexpr int32 MaxTerms = 24000000; // 1536 MB packed transport budget, never silently coarsen.
 constexpr int64 MaxCacheBytes = int64(MaxTerms)*sizeof(FMultiBounceTerm)+384*1024*1024;
 struct FTriangle
@@ -178,12 +178,39 @@ FVector3f CosineDirection(FVector3f N,uint32 Seed)
 }
 struct FWeights { FVector3f C[9]={}; };
 
+// Fixed production budget per probe. At least one independent path per capture
+// sample, at most 4x the average. Pilot samples are never included in the estimate.
+TArray<int32> AllocatePaths(const TArray<float>& Scores,int32 Average)
+{
+    TArray<int32> Counts;Counts.Init(1,Scores.Num());
+    int64 Remaining=int64(Scores.Num())*(Average-1);
+    const int32 Cap=Average*4;
+    while(Remaining>0)
+    {
+        double Sum=0;for(int I=0;I<Scores.Num();++I)if(Counts[I]<Cap)Sum+=FMath::Max(double(Scores[I]),1.e-12);
+        if(Sum<=0)break;
+        const int64 Budget=Remaining;double Cumulative=0;int64 Previous=0;
+        for(int I=0;I<Scores.Num();++I)if(Counts[I]<Cap)
+        {
+            Cumulative+=FMath::Max(double(Scores[I]),1.e-12);
+            const int64 End=FMath::Min(Budget,int64(FMath::FloorToDouble(Cumulative/Sum*double(Budget)+1.e-7)));
+            const int32 Extra=int32(FMath::Min(int64(Cap-Counts[I]),End-Previous));
+            Counts[I]+=Extra;Remaining-=Extra;Previous=End;
+        }
+        // Floating point roundoff must not stall the final unit of budget.
+        if(Remaining==Budget)for(int I=0;I<Counts.Num() && Remaining>0;++I)if(Counts[I]<Cap){++Counts[I];--Remaining;}
+    }
+    return Counts;
+}
+
 TSharedPtr<FMultiBounceData,ESPMode::ThreadSafe> Build(TSharedPtr<FSurfelVolume,ESPMode::ThreadSafe> Base,TArray<FTriangle> Geometry,
     float CellSize,TSharedPtr<FMultiBounceBuild,ESPMode::ThreadSafe> Job)
 {
     const double Start=FPlatformTime::Seconds();
     auto Data=MakeShared<FMultiBounceData,ESPMode::ThreadSafe>();
     Data->MinThroughput=Job->MinThroughput;
+    Data->PathsPerSample=FMath::Clamp(Job->PathsPerSample,1,16);
+    Data->SamplingMode=Job->SamplingMode!=0 && Data->PathsPerSample>=2?1:0;
     Data->Signature=Base->SceneSignature;Data->BaseCRC=MultiBounceBaseCRC(*Base);Data->CellSize=CellSize;Data->ProbeCount=Base->Validity.Num();Data->Validity=Base->Validity;
     if(Geometry.IsEmpty()){Data->Error=TEXT("No supported opaque static geometry");return Data;}
     TArray<FNode> BVH;BuildBVH(Geometry,BVH,0,Geometry.Num());
@@ -251,48 +278,112 @@ TSharedPtr<FMultiBounceData,ESPMode::ThreadSafe> Build(TSharedPtr<FSurfelVolume,
             }
         return Found;
     };
+    // Two independent light-free pilot paths estimate variation of a sparse
+    // (triangle,bounce) diffuse-response proxy. No evaluated sun radiance, camera
+    // state, clustered-source insertion, or pilot contribution enters the cache.
+    auto PilotScore=[&](int32 Index)->float
+    {
+        TMap<uint64,FVector3f> Difference;
+        const auto& Sample=Base->Samples[Index];
+        for(uint32 Pilot=0;Pilot<2;++Pilot)
+        {
+            FVector3f P=Positions[Index],N=Sample.Normal,Rho(Data->Surfaces[SourceForSample[Index]*3+2]),Throughput(1);
+            int32 Triangle=SampleTriangles[Index];
+            const uint32 Seed=HashRandom(uint32(Index)^0x73a4f129u^HashRandom(Pilot+0x98ba31u));
+            for(int32 B=0;B<Data->MaxBounces-1;++B)
+            {
+                Throughput*=Rho;
+                if(Throughput.GetMax()<1.e-7f || (B>=3 && Data->MinThroughput>0 && Throughput.GetMax()<Data->MinThroughput))break;
+                const FVector3f D=CosineDirection(N,Seed^uint32(0xa511e9b3*(B+1)));
+                const FVector3f Ng=Triangle>=0?TriangleNormal(*Data,Triangle,N):N;
+                if(FVector3f::DotProduct(D,Ng)<=0)break;
+                const float Offset=Triangle>=0?SurfaceOffset(P,FVector3f(Data->Triangles[Triangle*3+1]),FVector3f(Data->Triangles[Triangle*3+2])):.05f;
+                const FVector3f O=P+Ng*Offset;float Distance=1.e7f;
+                Triangle=Trace(*Data,O,D,Distance,false);if(Triangle<0)break;
+                P=O+D*Distance;N=TriangleNormal(*Data,Triangle,-D);
+                if(FVector3f::DotProduct(N,-D)<0)N=-N;
+                FVector3f Shading;
+                if(HitMaterial(Geometry[Triangle],P,N,Rho,Shading))N=Shading;
+                else
+                {
+                    // HitMaterial already failed, so this is the read-only fallback lookup.
+                    const int32 Source=FindSurface(P,N,Triangle);if(Source<0)break;
+                    N=FVector3f(Data->Surfaces[Source*3+1]);Rho=FVector3f(Data->Surfaces[Source*3+2]);
+                }
+                Difference.FindOrAdd((uint64(B+1)<<32)|uint32(Triangle))+=Throughput*Rho*(Pilot==0?1.f:-1.f);
+            }
+            ++Data->PilotPaths;
+        }
+        double Variance=0,SHNorm=0;
+        for(const auto& Pair:Difference)Variance+=Pair.Value.SizeSquared();
+        for(float W:Sample.Weights)SHNorm+=double(W)*W;
+        // sqrt(variance) allocation, with a nonzero floor protecting pilot misses.
+        return float(FMath::Sqrt(FMath::Max(Variance,.0001)*SHNorm));
+    };
     int32 SampleIndex=0;double QuantizationDelta=0,QuantizationEnergy=0;
     for(int32 P=0;P<Data->ProbeCount;++P)
     {
         if(Job->Cancelled.Load()){Data->Error=TEXT("Cancelled");return Data;}
         TMap<uint64,FWeights> Weights;
-        while(SampleIndex<Base->Samples.Num() && Base->Samples[SampleIndex].Probe==P)
+        int32 EndSample=SampleIndex;
+        while(EndSample<Base->Samples.Num() && Base->Samples[EndSample].Probe==P)++EndSample;
+        TArray<int32> PathCounts;PathCounts.Init(Data->PathsPerSample,EndSample-SampleIndex);
+        if(Data->SamplingMode==1)
         {
-            const auto& Sample=Base->Samples[SampleIndex];int32 Source=SourceForSample[SampleIndex];
-            FVector3f Position=Positions[SampleIndex],Normal=Sample.Normal,Throughput(1);
-            int32 CurrentTriangle=SampleTriangles[SampleIndex];
-            for(int32 Bounce=0;Bounce<Data->MaxBounces;++Bounce)
+            TArray<float> Scores;Scores.Reserve(PathCounts.Num());
+            for(int32 I=SampleIndex;I<EndSample;++I)
             {
-                ++Data->Paths[Bounce];auto& W=Weights.FindOrAdd((uint64(Bounce)<<32)|uint32(Source));
-                for(int C=0;C<9;++C)W.C[C]+=Throughput*Sample.Weights[C];
-                if(Bounce==Data->MaxBounces-1)break;
-                // Cosine importance sampling cancels cos(theta)/pi: only diffuse reflectance remains.
-                Throughput*=FVector3f(Data->Surfaces[Source*3+2]);
-                if(Throughput.GetMax()<1.e-7f)break;
-                // Deterministic, light-independent truncation. Preserve the first four
-                // orders; this threshold is throughput, not a radiance-error bound.
-                if(Bounce>=3 && Data->MinThroughput>0 && Throughput.GetMax()<Data->MinThroughput)
-                {++Data->TerminatedLowThroughput[Bounce];break;}
-                const FVector3f D=CosineDirection(Normal,HashRandom(uint32(SampleIndex))^uint32(0xa511e9b3*(Bounce+1)));
-                const FVector3f GeometryNormal=CurrentTriangle>=0?TriangleNormal(*Data,CurrentTriangle,Normal):Normal;
-                if(FVector3f::DotProduct(D,GeometryNormal)<=0)break;
-                const float Offset=CurrentTriangle>=0?SurfaceOffset(Position,FVector3f(Data->Triangles[CurrentTriangle*3+1]),FVector3f(Data->Triangles[CurrentTriangle*3+2])):.05f;
-                const FVector3f O=Position+GeometryNormal*Offset;float Distance=1.e7f;
-                const int32 Hit=Trace(*Data,O,D,Distance,false);if(Hit<0)break;
-                Position=O+D*Distance;
-                Normal=FVector3f::CrossProduct(FVector3f(Data->Triangles[Hit*3+1]),FVector3f(Data->Triangles[Hit*3+2])).GetSafeNormal();
-                // Render meshes can have reversed winding. Lookup uses the facing hemisphere,
-                // and still requires a matching captured front-face material sample.
-                if(FVector3f::DotProduct(Normal,-D)<0)Normal=-Normal;
-                ++Data->SurfaceHits;Source=FindSurface(Position,Normal,Hit);
-                if(Source<0)
+                if(Job->Cancelled.Load()){Data->Error=TEXT("Cancelled");return Data;}
+                Scores.Add(PilotScore(I));
+            }
+            PathCounts=AllocatePaths(Scores,Data->PathsPerSample);
+        }
+        const int32 FirstSample=SampleIndex;
+        while(SampleIndex<EndSample)
+        {
+            const int32 Count=PathCounts[SampleIndex-FirstSample];
+            for(int32 Path=0;Path<Count;++Path)
+            {
+                if(Job->Cancelled.Load()){Data->Error=TEXT("Cancelled");return Data;}
+                ++Data->ProductionPaths;
+                const uint32 Seed=Data->PathsPerSample==1?HashRandom(uint32(SampleIndex)):
+                    HashRandom(uint32(SampleIndex)^0xc21d93afu^HashRandom(uint32(Path)+0x1537u));
+                const auto& Sample=Base->Samples[SampleIndex];int32 Source=SourceForSample[SampleIndex];
+                FVector3f Position=Positions[SampleIndex],Normal=Sample.Normal,Throughput(1);
+                int32 CurrentTriangle=SampleTriangles[SampleIndex];
+                for(int32 Bounce=0;Bounce<Data->MaxBounces;++Bounce)
                 {
-                    if(Data->UnmappedHits<12)UE_LOG(LogPRTMulti,Display,TEXT("Unmapped secondary surface P=%s N=%s"),*Position.ToString(),*Normal.ToString());
-                    ++Data->UnmappedHits;++Data->UnmappedByBounce[Bounce];break;
+                    ++Data->Paths[Bounce];auto& W=Weights.FindOrAdd((uint64(Bounce)<<32)|uint32(Source));
+                    for(int C=0;C<9;++C)W.C[C]+=Throughput*(Sample.Weights[C]/float(Count));
+                    if(Bounce==Data->MaxBounces-1)break;
+                    // Cosine importance sampling cancels cos(theta)/pi: only diffuse reflectance remains.
+                    Throughput*=FVector3f(Data->Surfaces[Source*3+2]);
+                    if(Throughput.GetMax()<1.e-7f)break;
+                    // Deterministic, light-independent truncation. Preserve the first four
+                    // orders; this threshold is throughput, not a radiance-error bound.
+                    if(Bounce>=3 && Data->MinThroughput>0 && Throughput.GetMax()<Data->MinThroughput)
+                    {++Data->TerminatedLowThroughput[Bounce];break;}
+                    const FVector3f D=CosineDirection(Normal,Seed^uint32(0xa511e9b3*(Bounce+1)));
+                    const FVector3f GeometryNormal=CurrentTriangle>=0?TriangleNormal(*Data,CurrentTriangle,Normal):Normal;
+                    if(FVector3f::DotProduct(D,GeometryNormal)<=0)break;
+                    const float Offset=CurrentTriangle>=0?SurfaceOffset(Position,FVector3f(Data->Triangles[CurrentTriangle*3+1]),FVector3f(Data->Triangles[CurrentTriangle*3+2])):.05f;
+                    const FVector3f O=Position+GeometryNormal*Offset;float Distance=1.e7f;
+                    const int32 Hit=Trace(*Data,O,D,Distance,false);if(Hit<0)break;
+                    Position=O+D*Distance;
+                    Normal=FVector3f::CrossProduct(FVector3f(Data->Triangles[Hit*3+1]),FVector3f(Data->Triangles[Hit*3+2])).GetSafeNormal();
+                    // Render meshes can have reversed winding. Lookup uses the facing hemisphere,
+                    // and still requires a matching captured front-face material sample.
+                    if(FVector3f::DotProduct(Normal,-D)<0)Normal=-Normal;
+                    ++Data->SurfaceHits;Source=FindSurface(Position,Normal,Hit);
+                    if(Source<0)
+                    {
+                        if(Data->UnmappedHits<12)UE_LOG(LogPRTMulti,Display,TEXT("Unmapped secondary surface P=%s N=%s"),*Position.ToString(),*Normal.ToString());
+                        ++Data->UnmappedHits;++Data->UnmappedByBounce[Bounce];break;
+                    }
+                    CurrentTriangle=Hit;
+                    // Keep the captured material shading normal for lighting/scattering.
+                    Normal=FVector3f(Data->Surfaces[Source*3+1]);
                 }
-                CurrentTriangle=Hit;
-                // Keep the captured material shading normal for lighting/scattering.
-                Normal=FVector3f(Data->Surfaces[Source*3+1]);
             }
             ++SampleIndex;
         }
@@ -327,9 +418,9 @@ TSharedPtr<FMultiBounceData,ESPMode::ThreadSafe> Build(TSharedPtr<FSurfelVolume,
 }
 }
 
-TSharedPtr<FMultiBounceBuild,ESPMode::ThreadSafe> BuildMultiBounce(UWorld* World,TSharedPtr<FSurfelVolume> Base,float CellSize,float MinThroughput)
+TSharedPtr<FMultiBounceBuild,ESPMode::ThreadSafe> BuildMultiBounce(UWorld* World,TSharedPtr<FSurfelVolume> Base,float CellSize,float MinThroughput,int32 PathsPerSample,bool Adaptive)
 {
-    auto Job=MakeShared<FMultiBounceBuild,ESPMode::ThreadSafe>();Job->MinThroughput=FMath::Clamp(MinThroughput,0.f,.25f);TArray<FTriangle> Geometry;uint32 SurfaceGroup=0;
+    auto Job=MakeShared<FMultiBounceBuild,ESPMode::ThreadSafe>();Job->MinThroughput=FMath::Clamp(MinThroughput,0.f,.25f);Job->PathsPerSample=FMath::Clamp(PathsPerSample,1,16);Job->SamplingMode=Adaptive && PathsPerSample>=2?1:0;TArray<FTriangle> Geometry;uint32 SurfaceGroup=0;
     for(TActorIterator<AActor> It(World);It;++It)
     {
         if(It->IsA<APRTProbeVolume>())continue;
@@ -396,6 +487,9 @@ bool FMultiBounceData::Save(const FString& Path)const
     if(!Error.IsEmpty() || Ranges.Num()!=ProbeCount || Terms.IsEmpty() || Terms.Num()>MaxTerms)return false;
     if(!SourceGeometry.IsEmpty() && SourceGeometry.Num()!=Surfaces.Num()/3)return false;
     if(CacheVersion<3 || CacheVersion>MultiVersion)return false;
+    if(PathsPerSample<1 || PathsPerSample>16 || SamplingMode<0 || SamplingMode>1
+        || (SamplingMode==1 && PathsPerSample<2) || PilotPaths<0 || ProductionPaths<0)return false;
+    if(CacheVersion<8 && (PathsPerSample!=1 || SamplingMode!=0))return false;
     if(MaxBounces<1 || MaxBounces>MaxTransportBounces || !FMath::IsFinite(MinThroughput) || MinThroughput<0 || MinThroughput>.25f)return false;
     for(const auto& T:Terms)if(T.Bounce>uint32(CacheVersion>=7?MaxBounces:4))return false;
     const int64 EstimatedBytes=int64(Terms.Num())*64+int64(Surfaces.Num()+Triangles.Num()+Nodes.Num())*16
@@ -406,6 +500,7 @@ bool FMultiBounceData::Save(const FString& Path)const
     TArray<uint8> Bytes;FMemoryWriter Ar(Bytes);uint32 M=MultiMagic;int32 V=CacheVersion;Ar<<M<<V;
     auto Sig=Signature;auto Cell=CellSize;auto P=ProbeCount;auto CRC=BaseCRC;Ar<<Sig<<Cell<<P<<CRC;
     if(V>=7){auto B=MaxBounces;auto Cutoff=MinThroughput;Ar<<B<<Cutoff;}
+    if(V>=8){auto N=PathsPerSample,Mode=SamplingMode;auto Pilot=PilotPaths,Production=ProductionPaths;Ar<<N<<Mode<<Pilot<<Production;}
     for(const auto* Array:{&Surfaces,&Triangles,&Nodes}){int32 N=Array->Num();Ar<<N;Ar.Serialize(const_cast<FVector4f*>(Array->GetData()),int64(N)*sizeof(FVector4f));}
     int32 TermCount=Terms.Num();Ar<<TermCount;Ar.Serialize(const_cast<FMultiBounceTerm*>(Terms.GetData()),int64(TermCount)*sizeof(FMultiBounceTerm));
     Ar.Serialize(const_cast<FUintVector2*>(Ranges.GetData()),int64(ProbeCount)*sizeof(FUintVector2));
@@ -425,7 +520,7 @@ bool FMultiBounceData::Save(const FString& Path)const
     IFileManager::Get().MakeDirectory(*FPaths::GetPath(Path),true);
     return !Ar.IsError() && Bytes.Num()<=MaxCacheBytes && FFileHelper::SaveArrayToFile(Bytes,*(Path+TEXT(".tmp"))) && IFileManager::Get().Move(*Path,*(Path+TEXT(".tmp")),true,true);
 }
-TSharedPtr<FMultiBounceData,ESPMode::ThreadSafe> FMultiBounceData::Load(const FString& Path,uint64 Expected,float Cell,uint32 ExpectedBaseCRC,float ExpectedMinThroughput)
+TSharedPtr<FMultiBounceData,ESPMode::ThreadSafe> FMultiBounceData::Load(const FString& Path,uint64 Expected,float Cell,uint32 ExpectedBaseCRC,float ExpectedMinThroughput,int32 ExpectedPaths,int32 ExpectedSampling)
 {
     const int64 Size=IFileManager::Get().FileSize(*Path);if(Size<64 || Size>MaxCacheBytes)return nullptr;
     TArray<uint8> Bytes;if(!FFileHelper::LoadFileToArray(Bytes,*Path))return nullptr;
@@ -443,6 +538,13 @@ TSharedPtr<FMultiBounceData,ESPMode::ThreadSafe> FMultiBounceData::Load(const FS
             || Data->MinThroughput<0 || Data->MinThroughput>.25f
             || (ExpectedMinThroughput>=0 && Data->MinThroughput!=ExpectedMinThroughput))return nullptr;
     }
+    if(V>=8)
+    {
+        Ar<<Data->PathsPerSample<<Data->SamplingMode<<Data->PilotPaths<<Data->ProductionPaths;
+        if(Data->PathsPerSample<1 || Data->PathsPerSample>16 || Data->SamplingMode<0 || Data->SamplingMode>1
+            || (Data->SamplingMode==1 && Data->PathsPerSample<2) || Data->PilotPaths<0 || Data->ProductionPaths<0)return nullptr;
+    }
+    if((ExpectedPaths>=0 && Data->PathsPerSample!=ExpectedPaths) || (ExpectedSampling>=0 && Data->SamplingMode!=ExpectedSampling))return nullptr;
     for(auto* Array:{&Data->Surfaces,&Data->Triangles,&Data->Nodes})
     {
         int32 N=0;Ar<<N;if(Ar.IsError() || N<1 || N>MaxTerms || int64(N)*16>Ar.TotalSize()-Ar.Tell())return nullptr;
@@ -546,8 +648,8 @@ void FMultiBounceData::EvaluateUnclusteredCPU(const FSurfelVolume& Base,const FV
 FString FMultiBounceData::QualityReport()const
 {
     auto Array=[](const int32* Values,int32 Count){FString R=TEXT("[");for(int32 I=0;I<Count;++I){if(I)R+=TEXT(",");R+=FString::FromInt(Values[I]);}return R+TEXT("]");};
-    return FString::Printf(TEXT("{\"cache_version\":%d,\"max_bounces\":%d,\"min_throughput\":%.9g,\"probes\":%d,\"sources\":%d,\"terms\":%d,\"bound_samples\":%s,\"unbound_samples\":%s,\"surface_hits\":%d,\"unmapped_hits\":%d,\"unmapped_hit_fraction\":%.9g,\"unmapped_by_bounce\":%s,\"paths\":%s,\"terminated_low_throughput\":%s,\"max_capture_correction_cm\":%.9g,\"fp16_relative_error\":%.9g,\"build_seconds\":%.6f,\"material_hits\":%s}"),
-        CacheVersion,MaxBounces,MinThroughput,ProbeCount,Surfaces.Num()/3,Terms.Num(),
+    return FString::Printf(TEXT("{\"paths_per_sample\":%d,\"sampling_mode\":%d,\"pilot_paths\":%lld,\"production_paths\":%lld,\"cache_version\":%d,\"max_bounces\":%d,\"min_throughput\":%.9g,\"probes\":%d,\"sources\":%d,\"terms\":%d,\"bound_samples\":%s,\"unbound_samples\":%s,\"surface_hits\":%d,\"unmapped_hits\":%d,\"unmapped_hit_fraction\":%.9g,\"unmapped_by_bounce\":%s,\"paths\":%s,\"terminated_low_throughput\":%s,\"max_capture_correction_cm\":%.9g,\"fp16_relative_error\":%.9g,\"build_seconds\":%.6f,\"material_hits\":%s}"),
+        PathsPerSample,SamplingMode,PilotPaths,ProductionPaths,CacheVersion,MaxBounces,MinThroughput,ProbeCount,Surfaces.Num()/3,Terms.Num(),
         CacheVersion>=4?*FString::FromInt(BoundSamples):TEXT("null"),CacheVersion>=4?*FString::FromInt(UnboundSamples):TEXT("null"),
         SurfaceHits,UnmappedHits,double(UnmappedHits)/FMath::Max(1,SurfaceHits),CacheVersion>=4?*Array(UnmappedByBounce,MaxBounces-1):TEXT("null"),
         *Array(Paths,MaxBounces),CacheVersion>=7?*Array(TerminatedLowThroughput,MaxBounces):TEXT("null"),
@@ -584,6 +686,31 @@ bool FPRTMultiBouncePhysics::RunTest(const FString&)
     Data->EvaluateCPU(FVector3f(0,0,-1),FVector3f(1),UE_PI,false,.05f,12,SH12);
     TestTrue(TEXT("Eight-order geometric series"),FVector3f(SH8[0]).Equals(FVector3f(.6496f,.1111f,.1111f),.005f));
     TestTrue(TEXT("Twelve-order geometric series"),FVector3f(SH12[0]).Equals(FVector3f(.663936f,.111111f,.111111f),.005f));
+    for(int32 Mode=0;Mode<2;++Mode)
+    {
+        auto SampleJob=MakeShared<FMultiBounceBuild,ESPMode::ThreadSafe>();
+        SampleJob->MinThroughput=0;SampleJob->PathsPerSample=Mode==0?4:2;SampleJob->SamplingMode=Mode;
+        auto Sampled=Build(Base,Geometry,100.f,SampleJob);
+        TestTrue(TEXT("Resampled transport built"),Sampled->Error.IsEmpty());
+        if(!Sampled->Error.IsEmpty())continue;
+        TestEqual(TEXT("Exact production budget"),Sampled->ProductionPaths,int64(Base->Samples.Num())*SampleJob->PathsPerSample);
+        TestEqual(TEXT("Separate pilot budget"),Sampled->PilotPaths,int64(Mode==1?Base->Samples.Num()*2:0));
+        TestEqual(TEXT("Pilot material lookups do not change production counters"),Sampled->MaterialHits,0);
+        TArray<FVector4f> Value;
+        // Test another light direction too: no sun state was baked into allocation.
+        for(FVector3f Sun:{FVector3f(0,0,-1),FVector3f(.6f,0,-.8f)})
+        {
+            Sampled->EvaluateCPU(Sun,FVector3f(1),UE_PI,false,.05f,12,Value);
+            TestTrue(TEXT("Resampling preserves analytic energy for multiple lights"),FVector3f(Value[0]).Equals(FVector3f(.663936f,.111111f,.111111f)*(-Sun.Z),.006f));
+        }
+        const FString SamplePath=FPaths::ProjectSavedDir()/TEXT("PRTAdaptiveAnalytic.multi");
+        TestTrue(TEXT("Save v8 sampling cache"),Sampled->Save(SamplePath));
+        auto SampleReload=FMultiBounceData::Load(SamplePath,123456,100,Sampled->BaseCRC,0,SampleJob->PathsPerSample,Mode);
+        TestTrue(TEXT("v8 sampling metadata reloads"),SampleReload.IsValid() && SampleReload->PilotPaths==Sampled->PilotPaths);
+        TestFalse(TEXT("Reject different sample budget"),FMultiBounceData::Load(SamplePath,123456,100,Sampled->BaseCRC,0,8,Mode).IsValid());
+        TestFalse(TEXT("Reject different allocation mode"),FMultiBounceData::Load(SamplePath,123456,100,Sampled->BaseCRC,0,SampleJob->PathsPerSample,1-Mode).IsValid());
+        IFileManager::Get().Delete(*SamplePath);
+    }
     auto CutJob=MakeShared<FMultiBounceBuild,ESPMode::ThreadSafe>();CutJob->MinThroughput=.05f;
     auto Cut=Build(Base,Geometry,100.f,CutJob);TArray<FVector4f> Cut4,Cut12;
     Cut->EvaluateCPU(FVector3f(0,0,-1),FVector3f(1),UE_PI,false,.05f,4,Cut4);
@@ -603,6 +730,11 @@ bool FPRTMultiBouncePhysics::RunTest(const FString&)
     TestFalse(TEXT("Changed cluster precision rejects cache"),FMultiBounceData::Load(Path,123456,50,Data->BaseCRC).IsValid());
     TestFalse(TEXT("Recaptured base samples reject old companion"),FMultiBounceData::Load(Path,123456,100,Data->BaseCRC+1).IsValid());
     TestFalse(TEXT("Changed cutoff rejects cache"),FMultiBounceData::Load(Path,123456,100,Data->BaseCRC,.1f).IsValid());
+    Data->CacheVersion=7;
+    TestTrue(TEXT("Save v7 reference"),Data->Save(Path));
+    TestTrue(TEXT("v7 loads with legacy sampling settings"),FMultiBounceData::Load(Path,123456,100,Data->BaseCRC,0,1,0).IsValid());
+    TestFalse(TEXT("v7 cannot satisfy resampling request"),FMultiBounceData::Load(Path,123456,100,Data->BaseCRC,0,2,1).IsValid());
+    Data->CacheVersion=8;
     TArray<uint8> Corrupted;FFileHelper::LoadFileToArray(Corrupted,*Path);Corrupted[Corrupted.Num()/2]^=1;FFileHelper::SaveArrayToFile(Corrupted,*Path);
     TestFalse(TEXT("Corrupted transport rejects cache"),FMultiBounceData::Load(Path,123456,100,Data->BaseCRC).IsValid());
     Data->Terms.RemoveAll([](const auto& T){return T.Bounce>4;});Data->Ranges[0].Y=Data->Terms.Num();
@@ -629,6 +761,24 @@ bool FPRTMultiBouncePhysics::RunTest(const FString&)
         if(Resaved)TestEqual(TEXT("Preserve legacy missing-hit count"),Resaved->UnmappedHits,7);
     }
     IFileManager::Get().Delete(*Path);
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPRTAdaptiveBudget,"PRTGI.MultiBounce.AdaptiveBudget",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FPRTAdaptiveBudget::RunTest(const FString&)
+{
+    using namespace PRTGI;
+    for(int32 N:{1,7,127})for(int32 Average:{1,2,4,16})for(int32 Case=0;Case<3;++Case)
+    {
+        TArray<float> Scores;Scores.Init(0,N);
+        if(Case==1)Scores[N/2]=1.e8f;
+        if(Case==2)for(int I=0;I<N;++I)Scores[I]=float(I+1);
+        auto Counts=AllocatePaths(Scores,Average);int64 Total=0;
+        for(int C:Counts){Total+=C;TestTrue(TEXT("Allocation preserves minimum coverage and cap"),C>=1 && C<=Average*4);}
+        TestEqual(TEXT("No paths lost to integer rounding or capping"),Total,int64(N)*Average);
+        if(Case==1 && N>1 && Average>1)TestTrue(TEXT("Variable region receives more production work"),Counts[N/2]>Counts[0]);
+    }
     return true;
 }
 

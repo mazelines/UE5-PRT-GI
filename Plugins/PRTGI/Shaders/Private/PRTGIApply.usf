@@ -21,6 +21,9 @@ uint ContactSamples;
 float ContactRadius;
 float ContactBias;
 float3 ContactWorldTranslation;
+uint ContactHalfResolution;
+Texture2D<float4> ContactTexture;
+RWTexture2D<float4> ContactOutput;
 RWTexture2D<float4> SceneColorOutput;
 
 SamplerState PointClampSampler;
@@ -233,9 +236,10 @@ float ProbeVisibility(uint Volume,int ProbeIndexInVolume,float3 ProbeToSurface)
     return Visibility;
 }
 
-float3 SampleVolume(uint Volume, float3 Position, float3 SurfaceNormal, float Basis[9], out float3 Support)
+float3 SampleVolume(uint Volume, float3 Position, float3 SurfaceNormal, float Basis[9], out float3 Support, out float3 Statistics)
 {
     Support=0;
+    Statistics=0; // accepted count, effective count (sum(w)^2/sum(w^2)), maximum normalized weight
     const int V = Volume * 5;
     const int Offset = int(ProbeVolumes[V].w);
     const int3 Counts = int3(ProbeVolumes[V + 2].xyz);
@@ -247,6 +251,7 @@ float3 SampleVolume(uint Volume, float3 Position, float3 SurfaceNormal, float Ba
         [unroll] for (int C = 0; C < 9; ++C)
             Irradiance += TrilinearCoefficient(GridPosition, C, Counts, Offset) * Basis[C];
         Support=1;
+        Statistics=-1; // Legacy trilinear coefficients do not use the visibility-weighted gather.
     }
     else
     {
@@ -282,17 +287,72 @@ float3 SampleVolume(uint Volume, float3 Position, float3 SurfaceNormal, float Ba
             Weight*=ProbeVisibility(Volume,ProbeIndex(Coordinate,Counts),Position-ProbePosition);
             Support.z+=Weight;
             if(Weight<=0.0)continue;
+            Statistics.x+=1;
+            Statistics.y+=Weight*Weight;
+            Statistics.z=max(Statistics.z,Weight);
             [unroll] for (int C = 0; C < 9; ++C)
                 Irradiance += Weight * ProbeCoefficients[Probe + C].rgb * Basis[C];
             WeightSum += Weight;
         }
         // Do not fill a fully invalid cell with light from across a solid wall.
         Irradiance = WeightSum > 1.e-6 ? Irradiance / WeightSum : 0.0;
+        Statistics.y=WeightSum>1.e-6?WeightSum*WeightSum/max(Statistics.y,1.e-20):0;
+        Statistics.z=WeightSum>1.e-6?Statistics.z/WeightSum:0;
     }
     return max(Irradiance, 0.0);
 }
 
 #define NUM_THREADS 8
+
+float3 ReceiverPosition(int2 LocalPixel,float DeviceZ)
+{
+    float2 UV=(float2(LocalPixel)+.5)/float2(ViewSize);
+    float Depth=ConvertFromDeviceZ(DeviceZ);
+    return mul(float4(GetScreenPositionForProjectionType(UV*float2(2,-2)+float2(-1,1),Depth),Depth,1),View.ScreenToTranslatedWorld).xyz;
+}
+
+[numthreads(NUM_THREADS,NUM_THREADS,1)]
+void ContactCS(uint3 ID:SV_DispatchThreadID)
+{
+    int2 HalfSize=(ViewSize+1)/2;
+    if(any(ID.xy>=uint2(HalfSize)))return;
+    int2 LocalPixel=min(int2(ID.xy)*2,ViewSize-1),Pixel=ViewRectMin+LocalPixel;
+    float Z=DepthTexture.Load(int3(Pixel,0));
+    // Normal length zero marks background; every allocated texel is written.
+    if(Z<=0){ContactOutput[ID.xy]=float4(0,0,0,1);return;}
+    float3 N=normalize(DecodeNormal(NormalTexture.Load(int3(Pixel,0)).xyz));
+    float3 P=ReceiverPosition(LocalPixel,Z);
+    ContactOutput[ID.xy]=float4(N,ContactVisibility(P,N,Pixel));
+}
+
+float ReconstructContact(int2 LocalPixel,float3 P,float3 N)
+{
+    if(ContactHalfResolution==0)return ContactVisibility(P,N,ViewRectMin+LocalPixel);
+    int2 HalfSize=(ViewSize+1)/2;
+    float2 Grid=float2(LocalPixel)*.5, T=frac(Grid);
+    int2 Base=int2(floor(Grid));
+    float Sum=0,WeightSum=0;
+    bool Edge=false;
+    [unroll]for(int I=0;I<4;++I)
+    {
+        int2 Tap=int2(I&1,I>>1),H=min(Base+Tap,HalfSize-1),L=min(H*2,ViewSize-1);
+        float2 W=lerp(1-T,T,float2(Tap));float Weight=W.x*W.y;
+        if(Weight<=0)continue;
+        float4 Sample=ContactTexture.Load(int3(H,0));
+        float Z=DepthTexture.Load(int3(ViewRectMin+L,0));
+        if(Z<=0 || dot(Sample.xyz,Sample.xyz)<.5){Edge=true;continue;}
+        float3 SN=normalize(Sample.xyz),SP=ReceiverPosition(L,Z),Delta=SP-P;
+        // Compare both tangent planes: a view-depth test alone rejects sloped floors.
+        float PlaneError=max(abs(dot(Delta,N)),abs(dot(Delta,SN)));
+        float Tolerance=max(.1,ContactRadius*.025);
+        float NormalDot=dot(SN,N);
+        if(PlaneError>Tolerance || NormalDot<.95 || length(Delta)>ContactRadius*.25){Edge=true;continue;}
+        Weight*=smoothstep(.95,.999,NormalDot)*(1-smoothstep(Tolerance*.25,Tolerance,PlaneError));
+        Sum+=Weight*Sample.w;WeightSum+=Weight;
+    }
+    // Thin geometry, silhouettes and missing support keep the full-resolution reference.
+    return Edge || WeightSum<.1?ContactVisibility(P,N,ViewRectMin+LocalPixel):Sum/WeightSum;
+}
 
 [numthreads(NUM_THREADS, NUM_THREADS, 1)]
 void MainCS(uint3 DispatchThreadId : SV_DispatchThreadID)
@@ -367,13 +427,18 @@ void MainCS(uint3 DispatchThreadId : SV_DispatchThreadID)
         float3 SpecularEnergy=(1+F0*((1-E)/E))*(E*F0+Ef*(F90-F0));
         DiffuseAlbedo*=saturate(1-Luminance(SpecularEnergy));
     }
-    float3 Support;
-    float3 Irradiance = SampleVolume(Selected, TranslatedWorldPosition, WorldNormal, Basis, Support);
+    float3 Support,Statistics;
+    float3 Irradiance = SampleVolume(Selected, TranslatedWorldPosition, WorldNormal, Basis, Support,Statistics);
     if(DebugMode!=0 && DebugMode!=4)
     {
         float Value=DebugMode==1?Support.z/max(Support.y,1.e-6):DebugMode==2?Support.z:Support.y/max(Support.x,1.e-6);
+        if(DebugMode==5)Value=Statistics.x/16;
+        if(DebugMode==6)Value=Statistics.y/16;
+        if(DebugMode==7)Value=Support.z>1.e-6?1-Statistics.z:0;
         float3 Color=lerp(float3(1,0,0),float3(0,1,0),saturate(Value));
-        SceneColorOutput[PixelIndex]=float4(Color*(ShouldUsePreExposure!=0?View.PreExposure:1),1);
+        if(DebugMode>=5 && Statistics.x<0)Color=float3(1,0,1);
+        // Diagnostic colors are already in display-relative (pre-exposed) units.
+        SceneColorOutput[PixelIndex]=float4(Color,1);
         return;
     }
     if (VolumeCount > 0)
@@ -401,8 +466,8 @@ void MainCS(uint3 DispatchThreadId : SV_DispatchThreadID)
                     if (Priority > FallbackPriority || (Priority == FallbackPriority && CellVolume < FallbackCell))
                     { Fallback = Volume; FallbackPriority = Priority; FallbackCell = CellVolume; }
                 }
-                float3 FallbackSupport;
-                float3 Lower = Fallback == 0xffffffff ? 0.0 : SampleVolume(Fallback, TranslatedWorldPosition, WorldNormal, Basis, FallbackSupport);
+                float3 FallbackSupport,FallbackStatistics;
+                float3 Lower = Fallback == 0xffffffff ? 0.0 : SampleVolume(Fallback, TranslatedWorldPosition, WorldNormal, Basis, FallbackSupport,FallbackStatistics);
                 Irradiance = lerp(Lower, Irradiance, Weight);
             }
         }
@@ -410,8 +475,8 @@ void MainCS(uint3 DispatchThreadId : SV_DispatchThreadID)
 
     // A short-range visibility correction for detail below probe spacing.
     // This is diffuse contact occlusion, not additional transported light.
-    const float Contact=ContactVisibility(TranslatedWorldPosition,WorldNormal,PixelIndex);
-    if(DebugMode==4){SceneColorOutput[PixelIndex]=float4(Contact.xxx*(ShouldUsePreExposure!=0?View.PreExposure:1),1);return;}
+    const float Contact=ReconstructContact(int2(DispatchThreadId.xy),TranslatedWorldPosition,WorldNormal);
+    if(DebugMode==4){SceneColorOutput[PixelIndex]=float4(Contact.xxx,1);return;}
     Irradiance*=Contact;
     const float PreExposure = ShouldUsePreExposure != 0 ? View.PreExposure : 1.0;
     const float3 IndirectRadiance = Irradiance * DiffuseAlbedo * (1.0 / PI) * IndirectIntensity * PreExposure;
